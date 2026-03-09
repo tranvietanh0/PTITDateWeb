@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './redis/redis.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { DiscoveryModule } from './discovery/discovery.module';
+import { SwipesModule } from './swipes/swipes.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { UploadsModule } from './uploads/uploads.module';
     AuthModule,
     ProfilesModule,
     UploadsModule,
+    DiscoveryModule,
+    SwipesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

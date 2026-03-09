@@ -52,3 +52,9 @@ Profile foundation APIs:
 - `POST /uploads/presign`
 - `POST /uploads/:token`
 - `GET /uploads/static/:key`
+
+Discovery + matching foundation APIs:
+
+- `GET /discovery?email=...&limit=...`
+- `POST /swipes`
+- `GET /matches?email=...`

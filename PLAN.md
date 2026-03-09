@@ -173,8 +173,9 @@ Risks / open issues:
 - End-to-end API tests against real database are not implemented yet.
 
 ## Sprint 2 - Profile & Onboarding
-Status: `in_progress`
+Status: `completed`
 Duration: Week 3-4
+Completed: 2026-03-09
 
 Tasks:
 - Profile creation/edit
@@ -194,8 +195,22 @@ Current progress:
 - Discovery access gate added to block users with incomplete profile setup.
 - Upload token flow implemented for onboarding photos (`/uploads/presign`, `/uploads/:token`, static file serving).
 
+Delivered:
+- Profile onboarding backend (`Profile`, `Preference`, `Photo`) with migration and CRUD endpoints.
+- Web onboarding UI connected to backend and profile-completion status calculation.
+- Discovery gate page that checks completion before allowing access.
+- Local token-based photo upload flow with image file support.
+- Integration-style controller tests for profiles and uploads endpoints.
+
+Deviations from plan:
+- Pre-signed upload is implemented with local token-based upload endpoint for MVP development.
+
+Risks / open issues:
+- Upload files are stored locally (`uploads/`) and need object storage migration before production.
+- Discovery gate is client-side and should be reinforced by server-side auth/session guards.
+
 ## Sprint 3 - Discovery, Swipe, Match
-Status: `pending`
+Status: `in_progress`
 Duration: Week 5-6
 
 Tasks:
@@ -206,6 +221,13 @@ Tasks:
 
 Definition of done:
 - Users can swipe and receive matches correctly
+
+Current progress:
+- Added Prisma models for `Swipe` and `Match` with migration `sprint3_swipe_match_foundation`.
+- Implemented discovery feed endpoint `GET /discovery`.
+- Implemented swipe and match endpoints (`POST /swipes`, `GET /matches`).
+- Added swipe service tests for self-swipe rejection, non-match like, and mutual-like match creation.
+- Connected `/discovery` web UI to real feed, swipe actions, and live match list refresh.
 
 ## Sprint 4 - Chat Realtime
 Status: `pending`
@@ -302,3 +324,9 @@ Status vocabulary:
 - 2026-03-09: Expanded PTIT email policy to include `@stu.ptit.edu.vn` across backend and frontend validation.
 - 2026-03-09: Implemented local upload-token photo flow and switched onboarding photo input to file upload.
 - 2026-03-09: Docker engine returned API error when starting containers; DB migration step remains pending until Docker is healthy.
+- 2026-03-09: Added integration tests for `ProfilesController` and `UploadsController` with validation and upload flow assertions.
+- 2026-03-09: Sprint 2 completed and Sprint 3 moved to `in_progress`.
+- 2026-03-09: Migration blocker note resolved earlier by applying `init_auth` and `sprint2_profile_foundation` on local MySQL.
+- 2026-03-09: Applied migration `sprint3_swipe_match_foundation` for `Swipe` and `Match` models.
+- 2026-03-09: Added discovery/swipe/match backend APIs with passing lint/test/build checks.
+- 2026-03-09: Replaced discovery placeholder UI with actual candidate cards and like/pass actions.

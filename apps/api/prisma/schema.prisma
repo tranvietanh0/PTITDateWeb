@@ -32,6 +32,16 @@ enum ModerationStatus {
   REJECTED
 }
 
+enum SwipeAction {
+  LIKE
+  PASS
+}
+
+enum MatchStatus {
+  ACTIVE
+  UNMATCHED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -44,6 +54,10 @@ model User {
   profile        Profile?
   preferences    Preference?
   photos         Photo[]
+  swipesGiven    Swipe[]        @relation("swipes_given")
+  swipesReceived Swipe[]        @relation("swipes_received")
+  matchesAsA     Match[]        @relation("matches_a")
+  matchesAsB     Match[]        @relation("matches_b")
 }
 
 model AuthIdentity {
@@ -108,4 +122,32 @@ model Photo {
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, orderIndex])
+}
+
+model Swipe {
+  id        String      @id @default(cuid())
+  actorId   String
+  targetId  String
+  action    SwipeAction
+  createdAt DateTime    @default(now())
+  actor     User        @relation("swipes_given", fields: [actorId], references: [id], onDelete: Cascade)
+  target    User        @relation("swipes_received", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, targetId])
+  @@index([targetId, action])
+}
+
+model Match {
+  id        String      @id @default(cuid())
+  userAId   String
+  userBId   String
+  status    MatchStatus @default(ACTIVE)
+  matchedAt DateTime    @default(now())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  userA     User        @relation("matches_a", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User        @relation("matches_b", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([status, matchedAt])
 }
