@@ -39,3 +39,13 @@ Default local URLs:
 - Magic link request + verify
 - Refresh + logout endpoints
 - Basic responsive auth UI
+
+## Sprint 2 (In Progress)
+
+Profile foundation APIs:
+
+- `GET /profiles?email=...`
+- `PUT /profiles`
+- `PUT /profiles/preferences`
+- `POST /profiles/photos`
+- `DELETE /profiles/photos/:photoId?email=...`

@@ -18,6 +18,20 @@ enum AuthMethod {
   MAGIC_LINK
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -27,6 +41,9 @@ model User {
   updatedAt      DateTime       @updatedAt
   sessions       Session[]
   authIdentities AuthIdentity[]
+  profile        Profile?
+  preferences    Preference?
+  photos         Photo[]
 }
 
 model AuthIdentity {
@@ -52,4 +69,43 @@ model Session {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  dob         DateTime
+  gender      Gender
+  bio         String   @db.VarChar(400)
+  faculty     String?
+  courseYear  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  minAge      Int      @default(18)
+  maxAge      Int      @default(27)
+  distanceKm  Int      @default(30)
+  interestedIn Gender?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Photo {
+  id               String           @id @default(cuid())
+  userId           String
+  url              String
+  orderIndex       Int              @default(0)
+  moderationStatus ModerationStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, orderIndex])
 }

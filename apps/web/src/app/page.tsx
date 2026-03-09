@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -75,6 +76,7 @@ export default function Home() {
         code: otpCode,
       })) as SessionResponse;
       setSession(data);
+      localStorage.setItem("ptitdate_email", data.email);
       setMessage("Dang nhap thanh cong bang OTP.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Xac minh OTP that bai");
@@ -117,6 +119,7 @@ export default function Home() {
         refreshToken: session.refreshToken,
       })) as SessionResponse;
       setSession(data);
+      localStorage.setItem("ptitdate_email", data.email);
       setMessage("Refresh session thanh cong.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Refresh that bai");
@@ -137,6 +140,7 @@ export default function Home() {
     try {
       await post("/auth/logout", { refreshToken: session.refreshToken });
       setSession(null);
+      localStorage.removeItem("ptitdate_email");
       setMessage("Logout thanh cong.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Logout that bai");
@@ -250,6 +254,16 @@ export default function Home() {
           <pre className="mt-3 overflow-auto rounded-xl bg-[#12223a] p-4 text-xs text-[#eef4ff]">
             {JSON.stringify(session, null, 2)}
           </pre>
+        ) : null}
+        {session ? (
+          <div className="mt-3">
+            <Link
+              href={`/onboarding?email=${encodeURIComponent(session.email)}`}
+              className="inline-flex rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+            >
+              Tiep tuc sang onboarding profile
+            </Link>
+          </div>
         ) : null}
       </section>
     </main>

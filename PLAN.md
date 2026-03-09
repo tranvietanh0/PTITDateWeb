@@ -185,6 +185,14 @@ Tasks:
 Definition of done:
 - User cannot access discovery until profile is complete
 
+Current progress:
+- Prisma models added for `Profile`, `Preference`, and `Photo`.
+- Profile APIs implemented (`GET/PUT profile`, `PUT preferences`, `POST/DELETE photos`).
+- Completion status logic added (`isComplete`, section progress, photo count).
+- Migration `sprint2_profile_foundation` applied on MySQL.
+- Web onboarding screen implemented with profile/preferences/photos integration.
+- Discovery access gate added to block users with incomplete profile setup.
+
 ## Sprint 3 - Discovery, Swipe, Match
 Status: `pending`
 Duration: Week 5-6
@@ -285,4 +293,8 @@ Status vocabulary:
 - 2026-03-09: Attempted Prisma migration on local MySQL; blocked by invalid local DB credentials (`P1000`).
 - 2026-03-09: Updated MySQL credentials, created `ptitdate`, and applied Prisma migration `init_auth` successfully.
 - 2026-03-09: Closed Sprint 1 and moved Sprint 2 to `in_progress`.
+- 2026-03-09: Implemented Sprint 2 backend foundation (profile/preferences/photos schema + APIs).
+- 2026-03-09: Applied migration `sprint2_profile_foundation` and validated API lint/test/build.
+- 2026-03-09: Added onboarding web flow (`/onboarding`) connected to profile APIs.
+- 2026-03-09: Added completion gate route (`/discovery`) requiring completed onboarding.
 - 2026-03-09: Docker engine returned API error when starting containers; DB migration step remains pending until Docker is healthy.
