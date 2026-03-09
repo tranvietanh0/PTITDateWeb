@@ -6,84 +6,103 @@ import { useCallback, useEffect, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+type DiscoveryItem = {
+  userId: string;
+  profile: { displayName: string; bio: string; gender: string };
+  photos: Array<{ id: string; url: string }>;
+};
+
+type MatchItem = {
+  matchId: string;
+  partner: {
+    userId: string;
+    email: string;
+    profile?: { displayName?: string; bio?: string };
+    photos?: Array<{ id: string; url: string }>;
+  };
+};
+
 export default function DiscoveryPage() {
   const [status, setStatus] = useState("Dang kiem tra profile...");
   const [allowed, setAllowed] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<
-    Array<{
-      userId: string;
-      profile: { displayName: string; bio: string; gender: string };
-      photos: Array<{ id: string; url: string }>;
-    }>
-  >([]);
-  const [matches, setMatches] = useState<
-    Array<{
-      matchId: string;
-      partner: {
-        userId: string;
-        email: string;
-        profile?: { displayName?: string };
-        photos?: Array<{ id: string; url: string }>;
-      };
-    }>
-  >([]);
+  const [items, setItems] = useState<DiscoveryItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [matches, setMatches] = useState<MatchItem[]>([]);
 
-  const fetchDiscovery = useCallback(async () => {
-    const accessToken = localStorage.getItem("ptitdate_access_token");
-
-    const response = await fetch(
-      `${API_URL}/discovery?limit=20`,
-      {
+  const authorizedFetch = useCallback(async (path: string, init?: RequestInit) => {
+    const buildRequest = (accessToken: string | null) =>
+      fetch(`${API_URL}${path}`, {
+        ...init,
         headers: {
-          ...(accessToken
-            ? {
-                Authorization: `Bearer ${accessToken}`,
-              }
-            : {}),
+          ...(init?.body instanceof FormData
+            ? {}
+            : { "Content-Type": "application/json" }),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(init?.headers ?? {}),
         },
-      },
-    );
-    const data = (await response.json()) as {
-      message?: string;
-      items?: Array<{
-        userId: string;
-        profile: { displayName: string; bio: string; gender: string };
-        photos: Array<{ id: string; url: string }>;
-      }>;
-    };
+      });
 
-    if (!response.ok) {
-      throw new Error(data.message ?? "Khong tai duoc discovery feed");
+    let accessToken = localStorage.getItem("ptitdate_access_token");
+    let response = await buildRequest(accessToken);
+
+    if (response.status === 401) {
+      const refreshToken = localStorage.getItem("ptitdate_refresh_token");
+      if (refreshToken) {
+        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshResponse.ok) {
+          const refreshed = (await refreshResponse.json()) as {
+            accessToken: string;
+            refreshToken: string;
+            email: string;
+          };
+          localStorage.setItem("ptitdate_access_token", refreshed.accessToken);
+          localStorage.setItem("ptitdate_refresh_token", refreshed.refreshToken);
+          localStorage.setItem("ptitdate_email", refreshed.email);
+          accessToken = refreshed.accessToken;
+          response = await buildRequest(accessToken);
+        }
+      }
     }
 
-    setItems(data.items ?? []);
+    return response;
   }, []);
 
-  const fetchMatches = useCallback(async () => {
-    const accessToken = localStorage.getItem("ptitdate_access_token");
+  const fetchDiscovery = useCallback(
+    async (useCursor = false) => {
+      const query = new URLSearchParams({ limit: "12" });
+      if (useCursor && cursor) {
+        query.set("cursor", cursor);
+      }
 
-    const response = await fetch(`${API_URL}/matches`, {
-      headers: {
-        ...(accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          : {}),
-      },
-    });
+      const authResponse = await authorizedFetch(`/discovery?${query.toString()}`);
+      const data = (await authResponse.json()) as {
+        message?: string;
+        nextCursor?: string | null;
+        items?: DiscoveryItem[];
+      };
+
+      if (!authResponse.ok) {
+        throw new Error(data.message ?? "Khong tai duoc discovery feed");
+      }
+
+      setCursor(data.nextCursor ?? null);
+      setItems((prev) => (useCursor ? [...prev, ...(data.items ?? [])] : data.items ?? []));
+    },
+    [authorizedFetch, cursor],
+  );
+
+  const fetchMatches = useCallback(async () => {
+    const response = await authorizedFetch(`/matches`);
     const data = (await response.json()) as {
       message?: string;
-      matches?: Array<{
-        matchId: string;
-        partner: {
-          userId: string;
-          email: string;
-          profile?: { displayName?: string };
-          photos?: Array<{ id: string; url: string }>;
-        };
-      }>;
+      matches?: MatchItem[];
     };
 
     if (!response.ok) {
@@ -91,36 +110,24 @@ export default function DiscoveryPage() {
     }
 
     setMatches(data.matches ?? []);
-  }, []);
+  }, [authorizedFetch]);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([fetchDiscovery(), fetchMatches()]);
+    await Promise.all([fetchDiscovery(false), fetchMatches()]);
   }, [fetchDiscovery, fetchMatches]);
 
   useEffect(() => {
     const currentEmail = localStorage.getItem("ptitdate_email") ?? "";
     setEmail(currentEmail);
 
-    if (!currentEmail) {
-      setStatus("Ban chua dang nhap. Quay ve trang chu de login.");
+    if (!currentEmail || !localStorage.getItem("ptitdate_access_token")) {
+      setStatus("Ban chua dang nhap. Vui long quay ve trang chu.");
       return;
     }
 
     async function checkCompletion() {
       try {
-        const response = await fetch(
-          `${API_URL}/profiles`,
-          {
-            headers: {
-              ...(localStorage.getItem("ptitdate_access_token")
-                ? {
-                    Authorization: `Bearer ${localStorage.getItem("ptitdate_access_token") ?? ""}`,
-                  }
-                : {}),
-            },
-          },
-        );
-
+        const response = await authorizedFetch(`/profiles`);
         const data = (await response.json()) as {
           completion?: { isComplete: boolean };
           message?: string;
@@ -132,7 +139,7 @@ export default function DiscoveryPage() {
 
         if (data.completion?.isComplete) {
           setAllowed(true);
-          setStatus("Profile da hoan thien. Discovery san sang.");
+          setStatus("Feed da san sang. Bat dau swipe.");
           await refreshAll();
           return;
         }
@@ -146,27 +153,15 @@ export default function DiscoveryPage() {
     }
 
     void checkCompletion();
-  }, [refreshAll]);
+  }, [authorizedFetch, refreshAll]);
 
   async function handleSwipe(targetUserId: string, action: "LIKE" | "PASS") {
-    if (!email) {
-      return;
-    }
-
     setLoading(true);
     setStatus(action === "LIKE" ? "Dang like..." : "Dang pass...");
 
     try {
-      const response = await fetch(`${API_URL}/swipes`, {
+      const response = await authorizedFetch(`/swipes`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(localStorage.getItem("ptitdate_access_token")
-            ? {
-                Authorization: `Bearer ${localStorage.getItem("ptitdate_access_token") ?? ""}`,
-              }
-            : {}),
-        },
         body: JSON.stringify({
           targetUserId,
           action,
@@ -182,11 +177,11 @@ export default function DiscoveryPage() {
         throw new Error(data.message ?? "Swipe that bai");
       }
 
-      if (data.matched) {
-        setStatus("Da match! Kiem tra danh sach match ben duoi.");
-      } else {
-        setStatus("Swipe thanh cong.");
-      }
+      setStatus(
+        data.matched
+          ? "Da match! Kiem tra danh sach match ben phai."
+          : "Swipe thanh cong.",
+      );
 
       await refreshAll();
     } catch (error) {
@@ -196,94 +191,132 @@ export default function DiscoveryPage() {
     }
   }
 
+  const topCandidate = items[0] ?? null;
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-5 p-6">
-      <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a8694e]">
-          Discovery Gate
-        </p>
-        <h1 className="mt-2 text-3xl font-bold">Discovery</h1>
-        <p className="mt-3 text-sm text-[#2d3f59]">{status}</p>
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8 md:px-10 md:py-12">
+      <section className="glass-panel fade-up rounded-[30px] p-6 md:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--teal)]">
+              Discovery Room
+            </p>
+            <h1 className="mt-2 text-3xl font-bold md:text-4xl">Swipe theo phong cach dating web</h1>
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">{email || "Chua co email session"}</p>
+          </div>
+          <p className="rounded-xl bg-white/70 px-4 py-2 text-sm">{status}</p>
+        </div>
       </section>
 
       {allowed ? (
-        <>
-          <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6">
-            <h2 className="text-xl font-semibold">Discovery Feed</h2>
-            {items.length === 0 ? (
-              <p className="mt-3 text-sm text-[#2d3f59]">
-                Khong con profile moi de swipe trong luc nay.
-              </p>
-            ) : (
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {items.map((item) => (
-                  <article
-                    key={item.userId}
-                    className="rounded-2xl border border-[#d8c5b3] bg-white p-4"
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <section className="glass-panel rounded-[28px] p-5 md:p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Swipe deck</h2>
+              <button
+                type="button"
+                onClick={() => void fetchDiscovery(false)}
+                className="rounded-lg border border-[rgba(31,36,51,0.18)] px-3 py-1.5 text-xs font-semibold"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {topCandidate ? (
+              <article className="mt-4 overflow-hidden rounded-3xl border border-[rgba(31,36,51,0.12)] bg-white shadow-[0_20px_50px_rgba(31,36,51,0.15)]">
+                <div className="relative">
+                  <Image
+                    src={topCandidate.photos[0]?.url ?? "https://picsum.photos/800/600"}
+                    alt={topCandidate.profile.displayName}
+                    width={900}
+                    height={600}
+                    unoptimized
+                    className="h-[340px] w-full object-cover md:h-[420px]"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-5 text-white">
+                    <p className="text-2xl font-bold">{topCandidate.profile.displayName}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-white/85">
+                      {topCandidate.profile.gender}
+                    </p>
+                    <p className="mt-2 max-w-md text-sm text-white/90">{topCandidate.profile.bio}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 p-4">
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => void handleSwipe(topCandidate.userId, "PASS")}
+                    className="rounded-xl border border-[rgba(187,70,33,0.45)] px-3 py-3 text-sm font-semibold text-[var(--accent-strong)] disabled:opacity-50"
                   >
-                    <h3 className="text-lg font-semibold">{item.profile.displayName}</h3>
-                    <p className="mt-1 text-sm text-[#4b5c77]">{item.profile.gender}</p>
-                    <p className="mt-2 text-sm text-[#1d2e4d]">{item.profile.bio}</p>
-                    {item.photos[0] ? (
-                      <Image
-                        src={item.photos[0].url}
-                        alt={item.profile.displayName}
-                        width={640}
-                        height={360}
-                        unoptimized
-                        className="mt-3 h-44 w-full rounded-xl object-cover"
-                      />
-                    ) : null}
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => handleSwipe(item.userId, "PASS")}
-                        className="rounded-lg border border-[#b04b29] px-3 py-2 text-sm font-semibold text-[#b04b29] disabled:opacity-50"
-                      >
-                        Pass
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => handleSwipe(item.userId, "LIKE")}
-                        className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                      >
-                        Like
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    Pass
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => void handleSwipe(topCandidate.userId, "LIKE")}
+                    className="rounded-xl bg-[var(--accent)] px-3 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    Like
+                  </button>
+                </div>
+              </article>
+            ) : (
+              <p className="mt-5 text-sm text-[var(--ink-soft)]">
+                Khong con profile moi. Thu load them hoac quay lai sau.
+              </p>
             )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => void fetchDiscovery(true)}
+                disabled={!cursor || loading}
+                className="rounded-lg bg-[var(--teal)] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Tai them profile
+              </button>
+            </div>
           </section>
 
-          <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6">
+          <section className="glass-panel rounded-[28px] p-5 md:p-6">
             <h2 className="text-xl font-semibold">Matches</h2>
-            {matches.length === 0 ? (
-              <p className="mt-3 text-sm text-[#2d3f59]">Chua co match nao.</p>
-            ) : (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {matches.map((match) => (
-                  <div
+            <div className="mt-4 space-y-3">
+              {matches.length === 0 ? (
+                <p className="text-sm text-[var(--ink-soft)]">Chua co match nao.</p>
+              ) : (
+                matches.map((match) => (
+                  <article
                     key={match.matchId}
-                    className="rounded-2xl border border-[#d8c5b3] bg-white p-4"
+                    className="rounded-2xl border border-[rgba(31,36,51,0.12)] bg-white p-3"
                   >
-                    <p className="font-semibold">
-                      {match.partner.profile?.displayName ?? match.partner.email}
-                    </p>
-                    <p className="text-sm text-[#4b5c77]">{match.partner.email}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src={match.partner.photos?.[0]?.url ?? "https://picsum.photos/200/200"}
+                        alt={match.partner.profile?.displayName ?? match.partner.email}
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="h-14 w-14 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-semibold">
+                          {match.partner.profile?.displayName ?? match.partner.email}
+                        </p>
+                        <p className="text-xs text-[var(--ink-soft)]">{match.partner.email}</p>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
           </section>
-        </>
+        </div>
       ) : (
-        <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6">
+        <section className="glass-panel mt-6 rounded-[28px] p-6">
+          <p className="text-sm text-[var(--ink-soft)]">Chua du dieu kien vao discovery.</p>
           <Link
             href={email ? `/onboarding?email=${encodeURIComponent(email)}` : "/"}
-            className="inline-flex rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+            className="mt-3 inline-flex rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
           >
             Di toi onboarding
           </Link>

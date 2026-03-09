@@ -25,6 +25,8 @@ export default function AuthCallbackPage() {
 
         const data = (await response.json()) as {
           email?: string;
+          accessToken?: string;
+          refreshToken?: string;
           message?: string;
         };
 
@@ -32,7 +34,18 @@ export default function AuthCallbackPage() {
           throw new Error(data.message ?? "Magic link khong hop le.");
         }
 
-        setStatus(`Dang nhap thanh cong: ${data.email ?? "PTIT user"}`);
+        if (!data.email || !data.accessToken || !data.refreshToken) {
+          throw new Error("Phien dang nhap khong hop le.");
+        }
+
+        localStorage.setItem("ptitdate_email", data.email);
+        localStorage.setItem("ptitdate_access_token", data.accessToken);
+        localStorage.setItem("ptitdate_refresh_token", data.refreshToken);
+
+        setStatus(`Dang nhap thanh cong: ${data.email}`);
+        window.setTimeout(() => {
+          window.location.href = `/onboarding?email=${encodeURIComponent(data.email ?? "")}`;
+        }, 500);
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Xac minh that bai.");
       }

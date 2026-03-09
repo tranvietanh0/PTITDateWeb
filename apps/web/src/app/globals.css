@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f1e8;
-  --foreground: #152238;
-  --card: #fffaf2;
+  --background: #f5efe6;
+  --foreground: #1f2433;
+  --card: #fff8ef;
+  --surface: #fff3e5;
   --accent: #d65a31;
-  --accent-soft: #f2b28f;
+  --accent-strong: #bb4621;
+  --ink-soft: #5f6f86;
+  --teal: #2e7a7f;
+  --ring: rgba(214, 90, 49, 0.24);
 }
 
 @theme inline {
@@ -15,7 +19,46 @@
 }
 
 body {
-  background: radial-gradient(circle at top right, #ffe0cc, var(--background) 45%);
+  background:
+    radial-gradient(circle at 15% 10%, #ffd8bd 0%, transparent 30%),
+    radial-gradient(circle at 85% 0%, #cde8eb 0%, transparent 33%),
+    linear-gradient(180deg, #f7f1e8 0%, var(--background) 60%);
   color: var(--foreground);
   font-family: var(--font-jakarta-sans), sans-serif;
+}
+
+.glass-panel {
+  background: linear-gradient(160deg, rgba(255, 250, 242, 0.9), rgba(255, 244, 229, 0.78));
+  border: 1px solid rgba(214, 90, 49, 0.18);
+  box-shadow: 0 24px 80px rgba(24, 33, 52, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.fade-up {
+  animation: fadeUp 520ms ease-out;
+}
+
+.float-card {
+  animation: floatCard 5s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }

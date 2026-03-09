@@ -1,7 +1,12 @@
 import { IsInt, IsUrl, Max, Min } from 'class-validator';
 
 export class AddPhotoDto {
-  @IsUrl()
+  @IsUrl({
+    require_protocol: true,
+    require_tld: false,
+    require_host: true,
+    protocols: ['http', 'https'],
+  })
   url!: string;
 
   @IsInt()

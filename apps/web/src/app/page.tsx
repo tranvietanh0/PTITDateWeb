@@ -161,124 +161,142 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 p-5 md:p-10">
-      <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6 shadow-[0_18px_70px_rgba(21,34,56,0.08)] md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a8694e]">
-          Sprint 1 - Auth Foundation
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-[var(--foreground)] md:text-5xl">
-          PTIT Date Web
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm text-[#2d3f59] md:text-base">
-          Dang nhap bang email PTIT voi OTP hoac magic link. Day la ban xay dung
-          dau tien cua luong xac thuc cho MVP.
-        </p>
-      </section>
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8 md:px-10 md:py-12">
+      <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="glass-panel fade-up relative overflow-hidden rounded-[30px] p-7 md:p-10">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[rgba(214,90,49,0.22)] blur-2xl" />
+          <div className="pointer-events-none absolute -left-8 bottom-10 h-40 w-40 rounded-full bg-[rgba(46,122,127,0.15)] blur-2xl" />
 
-      <section className="grid gap-5 md:grid-cols-2">
-        <form
-          onSubmit={handleRequestOtp}
-          className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6"
-        >
-          <h2 className="text-xl font-semibold">Yeu cau OTP</h2>
-          <p className="mt-1 text-sm text-[#51617b]">
-            Chi nhan @ptit.edu.vn hoac @stu.ptit.edu.vn
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--teal)]">
+            PTIT Dating Web
           </p>
-          <input
-            className="mt-4 w-full rounded-xl border border-[#d8c5b3] bg-white px-3 py-2 outline-none focus:border-[var(--accent)]"
-            placeholder="mssv@stu.ptit.edu.vn"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <button
-            disabled={loading}
-            className="mt-4 w-full rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white disabled:opacity-60"
-            type="submit"
-          >
-            Gui OTP
-          </button>
-        </form>
-
-        <form
-          onSubmit={handleVerifyOtp}
-          className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6"
-        >
-          <h2 className="text-xl font-semibold">Xac minh OTP</h2>
-          <p className="mt-1 text-sm text-[#51617b]">Nhap ma 6 chu so</p>
-          <input
-            className="mt-4 w-full rounded-xl border border-[#d8c5b3] bg-white px-3 py-2 outline-none focus:border-[var(--accent)]"
-            placeholder="123456"
-            maxLength={6}
-            value={otpCode}
-            onChange={(event) => setOtpCode(event.target.value)}
-          />
-          <button
-            disabled={loading}
-            className="mt-4 w-full rounded-xl bg-[var(--foreground)] px-4 py-2 font-semibold text-white disabled:opacity-60"
-            type="submit"
-          >
-            Dang nhap voi OTP
-          </button>
-
-          <button
-            disabled={loading}
-            type="button"
-            onClick={handleRequestMagicLink}
-            className="mt-3 w-full rounded-xl border border-[var(--accent)] px-4 py-2 font-semibold text-[var(--accent)] disabled:opacity-60"
-          >
-            Gui magic link
-          </button>
-        </form>
-      </section>
-
-      <section className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6 text-sm">
-        <p>
-          <strong>Status:</strong> {message}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleRefreshSession}
-            disabled={loading || !session}
-            className="rounded-lg border border-[var(--foreground)] px-3 py-1 font-semibold text-[var(--foreground)] disabled:opacity-50"
-          >
-            Refresh session
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={loading || !session}
-            className="rounded-lg border border-[#b04b29] px-3 py-1 font-semibold text-[#b04b29] disabled:opacity-50"
-          >
-            Logout
-          </button>
-        </div>
-        {devOtp ? (
-          <p className="mt-2">
-            <strong>Dev OTP:</strong> {devOtp}
+          <h1 className="mt-3 max-w-lg text-4xl font-bold leading-tight md:text-6xl">
+            Match nhanh.
+            <br />
+            Chat that.
+            <br />
+            Dung chat PTIT.
+          </h1>
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
+            Ban web duoc thiet ke theo luong Tinder/Bumble, toi uu mobile va desktop.
+            Xac thuc email PTIT, quet profile, match va tro chuyen trong mot trai
+            nghiem gon dep.
           </p>
-        ) : null}
-        {devMagicLink ? (
-          <p className="mt-2 break-all">
-            <strong>Dev Magic Link:</strong> {devMagicLink}
-          </p>
-        ) : null}
-        {session ? (
-          <pre className="mt-3 overflow-auto rounded-xl bg-[#12223a] p-4 text-xs text-[#eef4ff]">
-            {JSON.stringify(session, null, 2)}
-          </pre>
-        ) : null}
-        {session ? (
-          <div className="mt-3">
-            <Link
-              href={`/onboarding?email=${encodeURIComponent(session.email)}`}
-              className="inline-flex rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
-            >
-              Tiep tuc sang onboarding profile
-            </Link>
+
+          <div className="mt-7 grid gap-3 sm:grid-cols-3">
+            <div className="float-card rounded-2xl border border-[rgba(31,36,51,0.09)] bg-white/70 px-4 py-3">
+              <p className="text-xs text-[var(--ink-soft)]">Auth</p>
+              <p className="mt-1 text-sm font-semibold">OTP + Magic link</p>
+            </div>
+            <div className="float-card rounded-2xl border border-[rgba(31,36,51,0.09)] bg-white/70 px-4 py-3 [animation-delay:180ms]">
+              <p className="text-xs text-[var(--ink-soft)]">Onboarding</p>
+              <p className="mt-1 text-sm font-semibold">Profile studio</p>
+            </div>
+            <div className="float-card rounded-2xl border border-[rgba(31,36,51,0.09)] bg-white/70 px-4 py-3 [animation-delay:320ms]">
+              <p className="text-xs text-[var(--ink-soft)]">Discovery</p>
+              <p className="mt-1 text-sm font-semibold">Swipe + match</p>
+            </div>
           </div>
-        ) : null}
-      </section>
+        </section>
+
+        <section className="glass-panel fade-up rounded-[30px] p-6 md:p-8 [animation-delay:120ms]">
+          <div className="rounded-2xl border border-[rgba(214,90,49,0.18)] bg-white/80 px-4 py-3 text-sm">
+            <span className="font-semibold text-[var(--accent-strong)]">Status:</span>{" "}
+            <span className="text-[var(--ink-soft)]">{message}</span>
+          </div>
+
+          <form onSubmit={handleRequestOtp} className="mt-5 rounded-2xl bg-white/75 p-4">
+            <p className="text-sm font-semibold">Yeu cau OTP</p>
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              @ptit.edu.vn hoac @stu.ptit.edu.vn
+            </p>
+            <input
+              className="mt-3 w-full rounded-xl border border-[rgba(31,36,51,0.15)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--ring)]"
+              placeholder="mssv@stu.ptit.edu.vn"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+            <button
+              disabled={loading}
+              className="mt-3 w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:opacity-60"
+              type="submit"
+            >
+              Gui OTP
+            </button>
+          </form>
+
+          <form onSubmit={handleVerifyOtp} className="mt-4 rounded-2xl bg-white/75 p-4">
+            <p className="text-sm font-semibold">Xac minh OTP</p>
+            <input
+              className="mt-3 w-full rounded-xl border border-[rgba(31,36,51,0.15)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--ring)]"
+              placeholder="123456"
+              maxLength={6}
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value)}
+            />
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button
+                disabled={loading}
+                className="rounded-xl bg-[var(--foreground)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                type="submit"
+              >
+                Dang nhap OTP
+              </button>
+              <button
+                disabled={loading}
+                type="button"
+                onClick={handleRequestMagicLink}
+                className="rounded-xl border border-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent)] disabled:opacity-60"
+              >
+                Gui magic link
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleRefreshSession}
+              disabled={loading || !session}
+              className="rounded-lg border border-[rgba(31,36,51,0.2)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground)] disabled:opacity-50"
+            >
+              Refresh session
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loading || !session}
+              className="rounded-lg border border-[rgba(187,70,33,0.4)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-strong)] disabled:opacity-50"
+            >
+              Logout
+            </button>
+          </div>
+
+          {devOtp ? (
+            <p className="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs">
+              <strong>Dev OTP:</strong> {devOtp}
+            </p>
+          ) : null}
+          {devMagicLink ? (
+            <p className="mt-2 break-all rounded-xl bg-[var(--surface)] px-3 py-2 text-xs">
+              <strong>Dev Link:</strong> {devMagicLink}
+            </p>
+          ) : null}
+
+          {session ? (
+            <div className="mt-4 rounded-2xl border border-[rgba(46,122,127,0.24)] bg-[rgba(46,122,127,0.09)] p-4 text-sm">
+              <p className="font-semibold">Session san sang cho onboarding.</p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">{session.email}</p>
+              <Link
+                href={`/onboarding?email=${encodeURIComponent(session.email)}`}
+                className="mt-3 inline-flex rounded-lg bg-[var(--teal)] px-3 py-2 text-xs font-semibold text-white"
+              >
+                Tiep tuc toi Profile Studio
+              </Link>
+            </div>
+          ) : null}
+        </section>
+      </div>
     </main>
   );
 }
