@@ -127,9 +127,10 @@ Success criteria:
 ## 6) Sprint Plan
 
 ## Sprint 1 - Foundation & Auth
-Status: `in_progress`
+Status: `completed`
 Duration: Week 1-2
 Started: 2026-03-09
+Completed: 2026-03-09
 
 Tasks:
 - Initialize monorepo structure:
@@ -157,8 +158,22 @@ Definition of done:
 - Non-PTIT domains are blocked server-side
 - Basic tests for auth flows pass
 
+Delivered:
+- Monorepo scaffold (`apps/web`, `apps/api`, `packages/shared`) with workspace scripts.
+- Auth foundation with PTIT-only OTP + magic link + refresh/logout endpoints.
+- Redis-backed OTP/magic-link state and Prisma-backed user/session persistence.
+- Initial MySQL Prisma migration applied (`init_auth`) and Prisma client generated.
+
+Deviations from initial plan:
+- Database target changed from PostgreSQL to MySQL to match local MySQL Workbench workflow.
+- Dockerized DB setup deferred; migrated directly against local MySQL instance.
+
+Risks / open issues:
+- Runtime integration with live Redis/MySQL still depends on local services running consistently.
+- End-to-end API tests against real database are not implemented yet.
+
 ## Sprint 2 - Profile & Onboarding
-Status: `pending`
+Status: `in_progress`
 Duration: Week 3-4
 
 Tasks:
@@ -266,4 +281,8 @@ Status vocabulary:
 - 2026-03-09: Added persistent session flow in SQL database with refresh rotation and logout endpoints.
 - 2026-03-09: Switched database plan from PostgreSQL to MySQL (managed via MySQL Workbench locally).
 - 2026-03-09: Deferred Docker DB setup; continue Sprint 1 using local MySQL server + Workbench.
+- 2026-03-09: Added backend auth unit tests for OTP, PTIT email validation, refresh, and logout.
+- 2026-03-09: Attempted Prisma migration on local MySQL; blocked by invalid local DB credentials (`P1000`).
+- 2026-03-09: Updated MySQL credentials, created `ptitdate`, and applied Prisma migration `init_auth` successfully.
+- 2026-03-09: Closed Sprint 1 and moved Sprint 2 to `in_progress`.
 - 2026-03-09: Docker engine returned API error when starting containers; DB migration step remains pending until Docker is healthy.
