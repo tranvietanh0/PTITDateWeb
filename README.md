@@ -49,3 +49,6 @@ Profile foundation APIs:
 - `PUT /profiles/preferences`
 - `POST /profiles/photos`
 - `DELETE /profiles/photos/:photoId?email=...`
+- `POST /uploads/presign`
+- `POST /uploads/:token`
+- `GET /uploads/static/:key`

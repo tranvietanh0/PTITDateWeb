@@ -192,6 +192,7 @@ Current progress:
 - Migration `sprint2_profile_foundation` applied on MySQL.
 - Web onboarding screen implemented with profile/preferences/photos integration.
 - Discovery access gate added to block users with incomplete profile setup.
+- Upload token flow implemented for onboarding photos (`/uploads/presign`, `/uploads/:token`, static file serving).
 
 ## Sprint 3 - Discovery, Swipe, Match
 Status: `pending`
@@ -298,4 +299,6 @@ Status vocabulary:
 - 2026-03-09: Added onboarding web flow (`/onboarding`) connected to profile APIs.
 - 2026-03-09: Added completion gate route (`/discovery`) requiring completed onboarding.
 - 2026-03-09: Added Redis-service in-memory fallback to keep OTP/magic-link flow testable when local Redis is down.
+- 2026-03-09: Expanded PTIT email policy to include `@stu.ptit.edu.vn` across backend and frontend validation.
+- 2026-03-09: Implemented local upload-token photo flow and switched onboarding photo input to file upload.
 - 2026-03-09: Docker engine returned API error when starting containers; DB migration step remains pending until Docker is healthy.

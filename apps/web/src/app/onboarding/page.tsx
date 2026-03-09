@@ -51,7 +51,7 @@ export default function OnboardingPage() {
   const [distanceKm, setDistanceKm] = useState("30");
   const [interestedIn, setInterestedIn] = useState("FEMALE");
 
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoOrder, setPhotoOrder] = useState("0");
 
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
@@ -193,24 +193,58 @@ export default function OnboardingPage() {
   async function handleAddPhoto(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
-    setStatus("Dang them photo...");
+    setStatus("Dang tai photo...");
 
     try {
       ensureEmail();
+
+      if (!selectedPhoto) {
+        throw new Error("Vui long chon anh truoc khi upload.");
+      }
+
+      const uploadRequest = (await api("/uploads/presign", {
+        method: "POST",
+        body: JSON.stringify({
+          email: normalizedEmail,
+          fileName: selectedPhoto.name,
+          contentType: selectedPhoto.type,
+        }),
+      })) as {
+        uploadUrl: string;
+        fileUrl: string;
+      };
+
+      const formData = new FormData();
+      formData.append("file", selectedPhoto);
+
+      const uploadResponse = await fetch(uploadRequest.uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadResult = (await uploadResponse.json()) as {
+        fileUrl?: string;
+        message?: string;
+      };
+
+      if (!uploadResponse.ok || !uploadResult.fileUrl) {
+        throw new Error(uploadResult.message ?? "Upload anh that bai");
+      }
+
       await api("/profiles/photos", {
         method: "POST",
         body: JSON.stringify({
           email: normalizedEmail,
-          url: photoUrl,
+          url: uploadResult.fileUrl,
           orderIndex: Number(photoOrder),
         }),
       });
 
-      setPhotoUrl("");
-      setStatus("Them photo thanh cong");
+      setSelectedPhoto(null);
+      setStatus("Tai va them photo thanh cong");
       await loadProfile(normalizedEmail);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Them photo that bai");
+      setStatus(error instanceof Error ? error.message : "Tai photo that bai");
     } finally {
       setLoading(false);
     }
@@ -363,9 +397,9 @@ export default function OnboardingPage() {
         <form onSubmit={handleAddPhoto} className="mt-3 grid gap-3 md:grid-cols-[1fr_140px_160px]">
           <input
             className="rounded-xl border border-[#d8c5b3] bg-white px-3 py-2"
-            placeholder="https://..."
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
+            type="file"
+            accept="image/*"
+            onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
           />
           <input
             className="rounded-xl border border-[#d8c5b3] bg-white px-3 py-2"
@@ -380,7 +414,7 @@ export default function OnboardingPage() {
             className="rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white disabled:opacity-60"
             type="submit"
           >
-            Them photo
+            Tai len + them
           </button>
         </form>
 

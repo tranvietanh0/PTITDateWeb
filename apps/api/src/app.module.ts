@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './redis/redis.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ProfilesModule } from './profiles/profiles.module';
     RedisModule,
     AuthModule,
     ProfilesModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
