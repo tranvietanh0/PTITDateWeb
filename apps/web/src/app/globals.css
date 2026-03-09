@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f1e8;
+  --foreground: #152238;
+  --card: #fffaf2;
+  --accent: #d65a31;
+  --accent-soft: #f2b28f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta-sans);
+}
+
+body {
+  background: radial-gradient(circle at top right, #ffe0cc, var(--background) 45%);
+  color: var(--foreground);
+  font-family: var(--font-jakarta-sans), sans-serif;
+}

@@ -1,0 +1,36 @@
+{
+  "name": "ptitdateweb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PTIT dating web monorepo",
+  "scripts": {
+    "dev:web": "npm run dev --workspace web",
+    "dev:api": "npm run start:dev --workspace api",
+    "dev": "npm run dev:api",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "build:web": "npm run build --workspace web",
+    "build:api": "npm run build --workspace api",
+    "build": "npm run build:api && npm run build:web",
+    "lint:web": "npm run lint --workspace web",
+    "lint:api": "npm run lint --workspace api",
+    "lint": "npm run lint:api && npm run lint:web",
+    "test:api": "npm run test --workspace api",
+    "prisma:generate": "npm run prisma:generate --workspace api"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tranvietanh0/PTITDateWeb.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tranvietanh0/PTITDateWeb/issues"
+  },
+  "homepage": "https://github.com/tranvietanh0/PTITDateWeb#readme"
+}
