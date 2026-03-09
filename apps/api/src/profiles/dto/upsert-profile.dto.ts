@@ -1,7 +1,6 @@
 import { Gender } from '@prisma/client';
 import {
   IsDateString,
-  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -11,11 +10,6 @@ import {
 } from 'class-validator';
 
 export class UpsertProfileDto {
-  @IsString()
-  @MaxLength(254)
-  @IsEmail()
-  email!: string;
-
   @IsString()
   @MaxLength(80)
   displayName!: string;

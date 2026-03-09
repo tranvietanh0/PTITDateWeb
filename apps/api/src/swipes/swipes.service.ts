@@ -5,19 +5,18 @@ import {
 } from '@nestjs/common';
 import { MatchStatus, SwipeAction } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { normalizeEmail } from '../common/utils/email.util';
 
 @Injectable()
 export class SwipesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSwipe(input: {
-    email: string;
+    userId: string;
     targetUserId: string;
     action: SwipeAction;
   }) {
     const actor = await this.prisma.user.findUnique({
-      where: { email: normalizeEmail(input.email) },
+      where: { id: input.userId },
     });
 
     if (!actor) {
@@ -91,9 +90,9 @@ export class SwipesService {
     return { success: true, matched: true, matchId: match.id };
   }
 
-  async getMatchesByEmail(rawEmail: string) {
+  async getMatchesByUserId(userId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { email: normalizeEmail(rawEmail) },
+      where: { id: userId },
     });
 
     if (!user) {

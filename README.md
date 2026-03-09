@@ -40,21 +40,25 @@ Default local URLs:
 - Refresh + logout endpoints
 - Basic responsive auth UI
 
-## Sprint 2 (In Progress)
+## Sprint 2 (Completed)
 
 Profile foundation APIs:
 
-- `GET /profiles?email=...`
+- `GET /profiles`
 - `PUT /profiles`
 - `PUT /profiles/preferences`
 - `POST /profiles/photos`
-- `DELETE /profiles/photos/:photoId?email=...`
+- `DELETE /profiles/photos/:photoId`
 - `POST /uploads/presign`
 - `POST /uploads/:token`
 - `GET /uploads/static/:key`
 
 Discovery + matching foundation APIs:
 
-- `GET /discovery?email=...&limit=...`
+- `GET /discovery?limit=...&cursor=...`
 - `POST /swipes`
-- `GET /matches?email=...`
+- `GET /matches`
+
+Session note:
+
+- Protected endpoints use `Authorization: Bearer <accessToken>`.

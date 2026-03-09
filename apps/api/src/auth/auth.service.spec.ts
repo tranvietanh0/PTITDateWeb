@@ -18,6 +18,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let redis: RedisMock;
   let prisma: PrismaMock;
+  let tokenService: { signAccessToken: jest.Mock };
 
   beforeEach(() => {
     redis = {
@@ -47,7 +48,15 @@ describe('AuthService', () => {
       },
     };
 
-    service = new AuthService(prisma as never, redis as never);
+    tokenService = {
+      signAccessToken: jest.fn().mockResolvedValue('mock-access-token'),
+    };
+
+    service = new AuthService(
+      prisma as never,
+      redis as never,
+      tokenService as never,
+    );
   });
 
   it('rejects non-PTIT email when requesting OTP', async () => {

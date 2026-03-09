@@ -1,6 +1,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+import { TokenService } from '../auth/token.service';
+import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { PrismaService } from '../database/prisma.service';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
@@ -15,6 +17,13 @@ type ProfileCompletionResponse = {
 describe('ProfilesController (integration)', () => {
   let app: INestApplication;
   let httpServer: Parameters<typeof request>[0];
+
+  const tokenServiceMock = {
+    verifyAccessToken: jest.fn().mockResolvedValue({
+      sub: 'user_1',
+      email: 'test@ptit.edu.vn',
+    }),
+  };
 
   const prismaMock = {
     user: {
@@ -38,6 +47,11 @@ describe('ProfilesController (integration)', () => {
       controllers: [ProfilesController],
       providers: [
         ProfilesService,
+        JwtAccessGuard,
+        {
+          provide: TokenService,
+          useValue: tokenServiceMock,
+        },
         {
           provide: PrismaService,
           useValue: prismaMock,
@@ -67,11 +81,18 @@ describe('ProfilesController (integration)', () => {
     jest.clearAllMocks();
   });
 
-  it('returns 400 for invalid email query', async () => {
+  it('returns 200 for guarded profile query', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      email: 'test@ptit.edu.vn',
+      profile: null,
+      preferences: null,
+      photos: [],
+    });
+
     await request(httpServer)
       .get('/profiles')
-      .query({ email: 'abc' })
-      .expect(400);
+      .set('Authorization', 'Bearer test-token')
+      .expect(200);
   });
 
   it('returns profile completion payload', async () => {
@@ -96,7 +117,7 @@ describe('ProfilesController (integration)', () => {
 
     const response = await request(httpServer)
       .get('/profiles')
-      .query({ email: 'test@ptit.edu.vn' })
+      .set('Authorization', 'Bearer test-token')
       .expect(200);
 
     const body = response.body as ProfileCompletionResponse;
@@ -108,8 +129,8 @@ describe('ProfilesController (integration)', () => {
   it('returns 400 when minAge is greater than maxAge', async () => {
     await request(httpServer)
       .put('/profiles/preferences')
+      .set('Authorization', 'Bearer test-token')
       .send({
-        email: 'test@ptit.edu.vn',
         minAge: 30,
         maxAge: 20,
         distanceKm: 15,

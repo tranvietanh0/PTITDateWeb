@@ -31,8 +31,7 @@ describe('ProfilesService', () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.upsertProfile({
-        email: 'test@ptit.edu.vn',
+      service.upsertProfile('user_1', {
         displayName: 'Test',
         dob: '2003-01-01',
         gender: Gender.MALE,
@@ -43,8 +42,7 @@ describe('ProfilesService', () => {
 
   it('rejects invalid age range in preferences', async () => {
     await expect(
-      service.upsertPreferences({
-        email: 'test@ptit.edu.vn',
+      service.upsertPreferences('user_1', {
         minAge: 30,
         maxAge: 20,
         distanceKm: 15,
@@ -54,6 +52,7 @@ describe('ProfilesService', () => {
 
   it('returns completion payload from profile query', async () => {
     prisma.user.findUnique.mockResolvedValue({
+      id: 'user_1',
       email: 'test@ptit.edu.vn',
       profile: {
         displayName: 'Test User',
@@ -69,7 +68,7 @@ describe('ProfilesService', () => {
       photos: [{ id: 'p1' }, { id: 'p2' }],
     });
 
-    const result = await service.getProfileByEmail('test@ptit.edu.vn');
+    const result = await service.getProfileByUserId('user_1');
 
     expect(result.completion.isComplete).toBe(true);
     expect(result.completion.photoCount).toBe(2);

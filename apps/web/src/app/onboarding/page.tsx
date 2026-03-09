@@ -64,11 +64,19 @@ export default function OnboardingPage() {
     setEmail(nextEmail);
   }, []);
 
-  async function api(path: string, init?: RequestInit) {
+  const api = useCallback(async (path: string, init?: RequestInit) => {
+    const accessToken = localStorage.getItem("ptitdate_access_token");
     const response = await fetch(`${API_URL}${path}`, {
       ...init,
       headers: {
-        "Content-Type": "application/json",
+        ...(init?.body instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
+        ...(accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : {}),
         ...(init?.headers ?? {}),
       },
     });
@@ -81,12 +89,12 @@ export default function OnboardingPage() {
     }
 
     return data;
-  }
+  }, []);
 
-  const loadProfile = useCallback(async (targetEmail: string) => {
+  const loadProfile = useCallback(async () => {
     try {
       const data = (await api(
-        `/profiles?email=${encodeURIComponent(targetEmail)}`,
+        "/profiles",
       )) as ProfileResponse;
       setProfileData(data);
 
@@ -108,7 +116,7 @@ export default function OnboardingPage() {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Load profile failed");
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     const isAllowed = ALLOWED_DOMAINS.some((domain) =>
@@ -119,7 +127,7 @@ export default function OnboardingPage() {
       return;
     }
 
-    void loadProfile(normalizedEmail);
+    void loadProfile();
   }, [loadProfile, normalizedEmail]);
 
   function ensureEmail() {
@@ -144,7 +152,6 @@ export default function OnboardingPage() {
       await api("/profiles", {
         method: "PUT",
         body: JSON.stringify({
-          email: normalizedEmail,
           displayName,
           dob,
           gender,
@@ -155,7 +162,7 @@ export default function OnboardingPage() {
       });
 
       setStatus("Luu profile thanh cong");
-      await loadProfile(normalizedEmail);
+      await loadProfile();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Luu profile that bai");
     } finally {
@@ -173,7 +180,6 @@ export default function OnboardingPage() {
       await api("/profiles/preferences", {
         method: "PUT",
         body: JSON.stringify({
-          email: normalizedEmail,
           minAge: Number(minAge),
           maxAge: Number(maxAge),
           distanceKm: Number(distanceKm),
@@ -182,7 +188,7 @@ export default function OnboardingPage() {
       });
 
       setStatus("Luu preferences thanh cong");
-      await loadProfile(normalizedEmail);
+      await loadProfile();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Luu preferences that bai");
     } finally {
@@ -205,7 +211,6 @@ export default function OnboardingPage() {
       const uploadRequest = (await api("/uploads/presign", {
         method: "POST",
         body: JSON.stringify({
-          email: normalizedEmail,
           fileName: selectedPhoto.name,
           contentType: selectedPhoto.type,
         }),
@@ -234,7 +239,6 @@ export default function OnboardingPage() {
       await api("/profiles/photos", {
         method: "POST",
         body: JSON.stringify({
-          email: normalizedEmail,
           url: uploadResult.fileUrl,
           orderIndex: Number(photoOrder),
         }),
@@ -242,7 +246,7 @@ export default function OnboardingPage() {
 
       setSelectedPhoto(null);
       setStatus("Tai va them photo thanh cong");
-      await loadProfile(normalizedEmail);
+      await loadProfile();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tai photo that bai");
     } finally {
@@ -256,11 +260,11 @@ export default function OnboardingPage() {
 
     try {
       await api(
-        `/profiles/photos/${photoId}?email=${encodeURIComponent(normalizedEmail)}`,
+        `/profiles/photos/${photoId}`,
         { method: "DELETE" },
       );
       setStatus("Xoa photo thanh cong");
-      await loadProfile(normalizedEmail);
+      await loadProfile();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Xoa photo that bai");
     } finally {

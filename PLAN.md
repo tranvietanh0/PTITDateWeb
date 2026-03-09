@@ -228,6 +228,10 @@ Current progress:
 - Implemented swipe and match endpoints (`POST /swipes`, `GET /matches`).
 - Added swipe service tests for self-swipe rejection, non-match like, and mutual-like match creation.
 - Connected `/discovery` web UI to real feed, swipe actions, and live match list refresh.
+- Added cursor pagination support for discovery feed (`nextCursor`).
+- Applied preference-based filtering in discovery (gender + age range).
+- Added JWT access-token guard (`Authorization: Bearer`) and removed raw email query/body usage on protected endpoints.
+- Updated protected domain services to resolve actor/profile identity by `userId` from JWT payload.
 
 ## Sprint 4 - Chat Realtime
 Status: `pending`
@@ -330,3 +334,6 @@ Status vocabulary:
 - 2026-03-09: Applied migration `sprint3_swipe_match_foundation` for `Swipe` and `Match` models.
 - 2026-03-09: Added discovery/swipe/match backend APIs with passing lint/test/build checks.
 - 2026-03-09: Replaced discovery placeholder UI with actual candidate cards and like/pass actions.
+- 2026-03-09: Added discovery cursor pagination and preference-aware feed filtering.
+- 2026-03-09: Switched protected routes from `x-user-email` to JWT Bearer access guard.
+- 2026-03-09: Refactored profile/discovery/swipe/upload protected logic to use JWT `sub` (`userId`) as source of identity.

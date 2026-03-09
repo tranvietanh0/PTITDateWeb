@@ -30,9 +30,20 @@ export default function DiscoveryPage() {
     }>
   >([]);
 
-  const fetchDiscovery = useCallback(async (targetEmail: string) => {
+  const fetchDiscovery = useCallback(async () => {
+    const accessToken = localStorage.getItem("ptitdate_access_token");
+
     const response = await fetch(
-      `${API_URL}/discovery?email=${encodeURIComponent(targetEmail)}&limit=20`,
+      `${API_URL}/discovery?limit=20`,
+      {
+        headers: {
+          ...(accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {}),
+        },
+      },
     );
     const data = (await response.json()) as {
       message?: string;
@@ -50,10 +61,18 @@ export default function DiscoveryPage() {
     setItems(data.items ?? []);
   }, []);
 
-  const fetchMatches = useCallback(async (targetEmail: string) => {
-    const response = await fetch(
-      `${API_URL}/matches?email=${encodeURIComponent(targetEmail)}`,
-    );
+  const fetchMatches = useCallback(async () => {
+    const accessToken = localStorage.getItem("ptitdate_access_token");
+
+    const response = await fetch(`${API_URL}/matches`, {
+      headers: {
+        ...(accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : {}),
+      },
+    });
     const data = (await response.json()) as {
       message?: string;
       matches?: Array<{
@@ -74,8 +93,8 @@ export default function DiscoveryPage() {
     setMatches(data.matches ?? []);
   }, []);
 
-  const refreshAll = useCallback(async (targetEmail: string) => {
-    await Promise.all([fetchDiscovery(targetEmail), fetchMatches(targetEmail)]);
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchDiscovery(), fetchMatches()]);
   }, [fetchDiscovery, fetchMatches]);
 
   useEffect(() => {
@@ -90,7 +109,16 @@ export default function DiscoveryPage() {
     async function checkCompletion() {
       try {
         const response = await fetch(
-          `${API_URL}/profiles?email=${encodeURIComponent(currentEmail)}`,
+          `${API_URL}/profiles`,
+          {
+            headers: {
+              ...(localStorage.getItem("ptitdate_access_token")
+                ? {
+                    Authorization: `Bearer ${localStorage.getItem("ptitdate_access_token") ?? ""}`,
+                  }
+                : {}),
+            },
+          },
         );
 
         const data = (await response.json()) as {
@@ -105,7 +133,7 @@ export default function DiscoveryPage() {
         if (data.completion?.isComplete) {
           setAllowed(true);
           setStatus("Profile da hoan thien. Discovery san sang.");
-          await refreshAll(currentEmail);
+          await refreshAll();
           return;
         }
 
@@ -131,9 +159,15 @@ export default function DiscoveryPage() {
     try {
       const response = await fetch(`${API_URL}/swipes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("ptitdate_access_token")
+            ? {
+                Authorization: `Bearer ${localStorage.getItem("ptitdate_access_token") ?? ""}`,
+              }
+            : {}),
+        },
         body: JSON.stringify({
-          email,
           targetUserId,
           action,
         }),
@@ -154,7 +188,7 @@ export default function DiscoveryPage() {
         setStatus("Swipe thanh cong.");
       }
 
-      await refreshAll(email);
+      await refreshAll();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Swipe that bai");
     } finally {

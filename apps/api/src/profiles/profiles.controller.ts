@@ -6,43 +6,51 @@ import {
   Param,
   Put,
   Post,
-  Query,
+  UseGuards,
 } from '@nestjs/common';
+import { CurrentUserId } from '../common/decorators/current-user-id.decorator';
+import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { ProfilesService } from './profiles.service';
-import { ProfileEmailQueryDto } from './dto/profile-email-query.dto';
 import { UpsertProfileDto } from './dto/upsert-profile.dto';
 import { UpsertPreferencesDto } from './dto/upsert-preferences.dto';
 import { AddPhotoDto } from './dto/add-photo.dto';
 
 @Controller('profiles')
+@UseGuards(JwtAccessGuard)
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Get()
-  async getProfile(@Query() query: ProfileEmailQueryDto) {
-    return this.profilesService.getProfileByEmail(query.email);
+  async getProfile(@CurrentUserId() userId: string) {
+    return this.profilesService.getProfileByUserId(userId);
   }
 
   @Put()
-  async upsertProfile(@Body() body: UpsertProfileDto) {
-    return this.profilesService.upsertProfile(body);
+  async upsertProfile(
+    @CurrentUserId() userId: string,
+    @Body() body: UpsertProfileDto,
+  ) {
+    return this.profilesService.upsertProfile(userId, body);
   }
 
   @Put('preferences')
-  async upsertPreferences(@Body() body: UpsertPreferencesDto) {
-    return this.profilesService.upsertPreferences(body);
+  async upsertPreferences(
+    @CurrentUserId() userId: string,
+    @Body() body: UpsertPreferencesDto,
+  ) {
+    return this.profilesService.upsertPreferences(userId, body);
   }
 
   @Post('photos')
-  async addPhoto(@Body() body: AddPhotoDto) {
-    return this.profilesService.addPhoto(body);
+  async addPhoto(@CurrentUserId() userId: string, @Body() body: AddPhotoDto) {
+    return this.profilesService.addPhoto(userId, body);
   }
 
   @Delete('photos/:photoId')
   async deletePhoto(
+    @CurrentUserId() userId: string,
     @Param('photoId') photoId: string,
-    @Query() query: ProfileEmailQueryDto,
   ) {
-    return this.profilesService.removePhoto(query.email, photoId);
+    return this.profilesService.removePhoto(userId, photoId);
   }
 }

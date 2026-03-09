@@ -6,12 +6,15 @@ import {
   Post,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { basename, join } from 'node:path';
+import { CurrentUserId } from '../common/decorators/current-user-id.decorator';
+import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { RequestUploadDto } from './dto/request-upload.dto';
 import { UploadsService } from './uploads.service';
 
@@ -20,8 +23,12 @@ export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
   @Post('presign')
-  requestUpload(@Body() body: RequestUploadDto) {
-    return this.uploadsService.requestUpload(body);
+  @UseGuards(JwtAccessGuard)
+  requestUpload(
+    @CurrentUserId() userId: string,
+    @Body() body: RequestUploadDto,
+  ) {
+    return this.uploadsService.requestUpload({ ...body, userId });
   }
 
   @Post(':token')

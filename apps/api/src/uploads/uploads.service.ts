@@ -6,7 +6,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { isPtitEmail, normalizeEmail } from '../common/utils/email.util';
+import { PrismaService } from '../database/prisma.service';
 
 type UploadTokenRecord = {
   key: string;
@@ -16,20 +16,23 @@ type UploadTokenRecord = {
 
 @Injectable()
 export class UploadsService {
+  constructor(private readonly prisma: PrismaService) {}
+
   private readonly tokenStore = new Map<string, UploadTokenRecord>();
   private readonly uploadRoot = join(process.cwd(), 'uploads');
   private readonly tokenExpiryMs = 5 * 60 * 1000;
 
-  requestUpload(input: {
-    email: string;
+  async requestUpload(input: {
+    userId: string;
     fileName: string;
     contentType?: string;
   }) {
-    const email = normalizeEmail(input.email);
-    if (!isPtitEmail(email)) {
-      throw new BadRequestException(
-        'Only @ptit.edu.vn or @stu.ptit.edu.vn emails are allowed.',
-      );
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
     }
 
     const sanitizedFileName = this.sanitizeFileName(input.fileName);

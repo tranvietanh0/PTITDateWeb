@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { normalizeEmail } from '../common/utils/email.util';
 import { UpsertProfileDto } from './dto/upsert-profile.dto';
 import { UpsertPreferencesDto } from './dto/upsert-preferences.dto';
 import { AddPhotoDto } from './dto/add-photo.dto';
@@ -13,10 +12,9 @@ import { AddPhotoDto } from './dto/add-photo.dto';
 export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProfileByEmail(rawEmail: string) {
-    const email = normalizeEmail(rawEmail);
+  async getProfileByUserId(userId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { id: userId },
       include: {
         profile: true,
         preferences: true,
@@ -41,8 +39,8 @@ export class ProfilesService {
     };
   }
 
-  async upsertProfile(input: UpsertProfileDto) {
-    const user = await this.requireUser(input.email);
+  async upsertProfile(userId: string, input: UpsertProfileDto) {
+    const user = await this.requireUser(userId);
 
     const profile = await this.prisma.profile.upsert({
       where: { userId: user.id },
@@ -68,14 +66,14 @@ export class ProfilesService {
     return { success: true, profile };
   }
 
-  async upsertPreferences(input: UpsertPreferencesDto) {
+  async upsertPreferences(userId: string, input: UpsertPreferencesDto) {
     if (input.minAge > input.maxAge) {
       throw new BadRequestException(
         'minAge must be less than or equal to maxAge.',
       );
     }
 
-    const user = await this.requireUser(input.email);
+    const user = await this.requireUser(userId);
 
     const preferences = await this.prisma.preference.upsert({
       where: { userId: user.id },
@@ -97,8 +95,8 @@ export class ProfilesService {
     return { success: true, preferences };
   }
 
-  async addPhoto(input: AddPhotoDto) {
-    const user = await this.requireUser(input.email);
+  async addPhoto(userId: string, input: AddPhotoDto) {
+    const user = await this.requireUser(userId);
 
     const photo = await this.prisma.photo.create({
       data: {
@@ -111,8 +109,8 @@ export class ProfilesService {
     return { success: true, photo };
   }
 
-  async removePhoto(rawEmail: string, photoId: string) {
-    const user = await this.requireUser(rawEmail);
+  async removePhoto(userId: string, photoId: string) {
+    const user = await this.requireUser(userId);
 
     const photo = await this.prisma.photo.findUnique({
       where: { id: photoId },
@@ -125,9 +123,8 @@ export class ProfilesService {
     return { success: true };
   }
 
-  private async requireUser(rawEmail: string) {
-    const email = normalizeEmail(rawEmail);
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  private async requireUser(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found. Please login first.');

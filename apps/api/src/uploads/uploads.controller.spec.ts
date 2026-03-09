@@ -2,6 +2,9 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { rm } from 'node:fs/promises';
 import request from 'supertest';
+import { TokenService } from '../auth/token.service';
+import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
+import { PrismaService } from '../database/prisma.service';
 import { UploadsController } from './uploads.controller';
 import { UploadsService } from './uploads.service';
 
@@ -22,10 +25,37 @@ describe('UploadsController (integration)', () => {
   let uploadsService: UploadsService;
   let httpServer: Parameters<typeof request>[0];
 
+  const tokenServiceMock = {
+    verifyAccessToken: jest.fn().mockResolvedValue({
+      sub: 'user_1',
+      email: 'test@ptit.edu.vn',
+    }),
+  };
+
+  const prismaMock = {
+    user: {
+      findUnique: jest.fn().mockResolvedValue({
+        id: 'user_1',
+        email: 'test@ptit.edu.vn',
+      }),
+    },
+  };
+
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [UploadsController],
-      providers: [UploadsService],
+      providers: [
+        UploadsService,
+        JwtAccessGuard,
+        {
+          provide: TokenService,
+          useValue: tokenServiceMock,
+        },
+        {
+          provide: PrismaService,
+          useValue: prismaMock,
+        },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -52,8 +82,8 @@ describe('UploadsController (integration)', () => {
   it('creates upload token for allowed PTIT email', async () => {
     const response = await request(httpServer)
       .post('/uploads/presign')
+      .set('Authorization', 'Bearer test-token')
       .send({
-        email: 'abc@stu.ptit.edu.vn',
         fileName: 'avatar.png',
         contentType: 'image/png',
       })
@@ -66,22 +96,11 @@ describe('UploadsController (integration)', () => {
     expect(body.fileUrl).toContain('/uploads/static/');
   });
 
-  it('rejects non-PTIT domain during presign', async () => {
-    await request(httpServer)
-      .post('/uploads/presign')
-      .send({
-        email: 'abc@gmail.com',
-        fileName: 'avatar.png',
-        contentType: 'image/png',
-      })
-      .expect(400);
-  });
-
   it('uploads image via token and serves static file', async () => {
     const preSignResponse = await request(httpServer)
       .post('/uploads/presign')
+      .set('Authorization', 'Bearer test-token')
       .send({
-        email: 'test@ptit.edu.vn',
         fileName: 'photo.jpg',
         contentType: 'image/jpeg',
       })

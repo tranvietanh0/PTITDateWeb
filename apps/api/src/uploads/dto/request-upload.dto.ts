@@ -1,11 +1,6 @@
-import { IsEmail, IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RequestUploadDto {
-  @IsString()
-  @MaxLength(254)
-  @IsEmail()
-  email!: string;
-
   @IsString()
   @MaxLength(255)
   fileName!: string;

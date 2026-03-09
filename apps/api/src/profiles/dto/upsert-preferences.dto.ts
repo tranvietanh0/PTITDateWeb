@@ -1,21 +1,7 @@
 import { Gender } from '@prisma/client';
-import {
-  IsEmail,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class UpsertPreferencesDto {
-  @IsString()
-  @MaxLength(254)
-  @IsEmail()
-  email!: string;
-
   @IsInt()
   @Min(18)
   @Max(80)

@@ -1,20 +1,6 @@
-import {
-  IsEmail,
-  IsInt,
-  IsString,
-  IsUrl,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsInt, IsUrl, Max, Min } from 'class-validator';
 
 export class AddPhotoDto {
-  @IsString()
-  @MaxLength(254)
-  @IsEmail()
-  email!: string;
-
-  @IsString()
   @IsUrl()
   url!: string;
 

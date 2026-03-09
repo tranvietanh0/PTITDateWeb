@@ -1,5 +1,4 @@
 import {
-  IsEmail,
   IsInt,
   IsOptional,
   IsString,
@@ -9,14 +8,14 @@ import {
 } from 'class-validator';
 
 export class DiscoveryQueryDto {
-  @IsString()
-  @MaxLength(254)
-  @IsEmail()
-  email!: string;
-
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(50)
   limit?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  cursor?: string;
 }

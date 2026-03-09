@@ -18,6 +18,7 @@ import {
 import { isPtitEmail, normalizeEmail } from '../common/utils/email.util';
 import { PrismaService } from '../database/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { TokenService } from './token.service';
 
 type OtpRecord = {
   code: string;
@@ -36,6 +37,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async requestOtp(rawEmail: string) {
@@ -195,10 +197,18 @@ export class AuthService {
       },
     });
 
+    const accessToken = await this.tokenService.signAccessToken(
+      {
+        sub: session.user.id,
+        email: session.user.email,
+      },
+      ACCESS_TOKEN_EXPIRY_SECONDS,
+    );
+
     return {
       success: true,
       email: session.user.email,
-      accessToken: this.generateToken(32),
+      accessToken,
       refreshToken: nextRefreshToken,
       expiresInSeconds: ACCESS_TOKEN_EXPIRY_SECONDS,
     };
@@ -271,10 +281,18 @@ export class AuthService {
       },
     });
 
+    const accessToken = await this.tokenService.signAccessToken(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      ACCESS_TOKEN_EXPIRY_SECONDS,
+    );
+
     return {
       success: true,
       email,
-      accessToken: this.generateToken(32),
+      accessToken,
       refreshToken,
       expiresInSeconds: ACCESS_TOKEN_EXPIRY_SECONDS,
     };

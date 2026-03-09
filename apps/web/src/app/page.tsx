@@ -82,6 +82,8 @@ export default function Home() {
       })) as SessionResponse;
       setSession(data);
       localStorage.setItem("ptitdate_email", data.email);
+      localStorage.setItem("ptitdate_access_token", data.accessToken);
+      localStorage.setItem("ptitdate_refresh_token", data.refreshToken);
       setMessage("Dang nhap thanh cong bang OTP.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Xac minh OTP that bai");
@@ -125,6 +127,8 @@ export default function Home() {
       })) as SessionResponse;
       setSession(data);
       localStorage.setItem("ptitdate_email", data.email);
+      localStorage.setItem("ptitdate_access_token", data.accessToken);
+      localStorage.setItem("ptitdate_refresh_token", data.refreshToken);
       setMessage("Refresh session thanh cong.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Refresh that bai");
@@ -146,6 +150,8 @@ export default function Home() {
       await post("/auth/logout", { refreshToken: session.refreshToken });
       setSession(null);
       localStorage.removeItem("ptitdate_email");
+      localStorage.removeItem("ptitdate_access_token");
+      localStorage.removeItem("ptitdate_refresh_token");
       setMessage("Logout thanh cong.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Logout that bai");

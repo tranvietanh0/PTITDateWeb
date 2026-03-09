@@ -40,7 +40,7 @@ describe('SwipesService', () => {
 
     await expect(
       service.createSwipe({
-        email: 'a@ptit.edu.vn',
+        userId: 'u1',
         targetUserId: 'u1',
         action: SwipeAction.LIKE,
       }),
@@ -49,13 +49,13 @@ describe('SwipesService', () => {
 
   it('creates non-match like when reverse like is missing', async () => {
     prisma.user.findUnique.mockImplementation(
-      (args: { where: { email?: string; id?: string } }) => {
+      (args: { where: { id?: string } }) => {
         const { where } = args;
-        if ('email' in where) {
+        if (where.id === 'u1') {
           return { id: 'u1', email: 'a@ptit.edu.vn' };
         }
 
-        if ('id' in where) {
+        if (where.id === 'u2') {
           return { id: 'u2', profile: { id: 'p2' } };
         }
 
@@ -66,7 +66,7 @@ describe('SwipesService', () => {
     prisma.swipe.findUnique.mockResolvedValueOnce(null);
 
     const result = await service.createSwipe({
-      email: 'a@ptit.edu.vn',
+      userId: 'u1',
       targetUserId: 'u2',
       action: SwipeAction.LIKE,
     });
@@ -76,13 +76,13 @@ describe('SwipesService', () => {
 
   it('creates match when reverse like exists', async () => {
     prisma.user.findUnique.mockImplementation(
-      (args: { where: { email?: string; id?: string } }) => {
+      (args: { where: { id?: string } }) => {
         const { where } = args;
-        if ('email' in where) {
+        if (where.id === 'u1') {
           return { id: 'u1', email: 'a@ptit.edu.vn' };
         }
 
-        if ('id' in where) {
+        if (where.id === 'u2') {
           return { id: 'u2', profile: { id: 'p2' } };
         }
 
@@ -99,7 +99,7 @@ describe('SwipesService', () => {
     prisma.match.upsert.mockResolvedValueOnce({ id: 'm1' });
 
     const result = await service.createSwipe({
-      email: 'a@ptit.edu.vn',
+      userId: 'u1',
       targetUserId: 'u2',
       action: SwipeAction.LIKE,
     });
@@ -110,7 +110,7 @@ describe('SwipesService', () => {
 
   it('throws on missing user for matches', async () => {
     prisma.user.findUnique.mockResolvedValueOnce(null);
-    await expect(service.getMatchesByEmail('no@ptit.edu.vn')).rejects.toThrow(
+    await expect(service.getMatchesByUserId('user_unknown')).rejects.toThrow(
       NotFoundException,
     );
   });
