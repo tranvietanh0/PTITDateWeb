@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const ALLOWED_DOMAINS = ["@ptit.edu.vn", "@stu.ptit.edu.vn"];
 
 type ProfileResponse = {
   email: string;
@@ -110,7 +111,11 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    if (!normalizedEmail.endsWith("@ptit.edu.vn")) {
+    const isAllowed = ALLOWED_DOMAINS.some((domain) =>
+      normalizedEmail.endsWith(domain),
+    );
+
+    if (!isAllowed) {
       return;
     }
 
@@ -118,8 +123,14 @@ export default function OnboardingPage() {
   }, [loadProfile, normalizedEmail]);
 
   function ensureEmail() {
-    if (!normalizedEmail.endsWith("@ptit.edu.vn")) {
-      throw new Error("Vui long nhap email @ptit.edu.vn hop le");
+    const isAllowed = ALLOWED_DOMAINS.some((domain) =>
+      normalizedEmail.endsWith(domain),
+    );
+
+    if (!isAllowed) {
+      throw new Error(
+        "Vui long nhap email @ptit.edu.vn hoac @stu.ptit.edu.vn hop le",
+      );
     }
   }
 
@@ -234,7 +245,7 @@ export default function OnboardingPage() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className="mt-4 w-full rounded-xl border border-[#d8c5b3] bg-white px-3 py-2"
-          placeholder="mssv@ptit.edu.vn"
+          placeholder="mssv@stu.ptit.edu.vn"
         />
         <p className="mt-2 text-sm text-[#2d3f59]">Status: {status}</p>
       </section>

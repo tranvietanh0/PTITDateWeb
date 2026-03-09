@@ -1,4 +1,4 @@
-export const PTIT_EMAIL_DOMAIN = '@ptit.edu.vn';
+export const PTIT_EMAIL_DOMAINS = ['@ptit.edu.vn', '@stu.ptit.edu.vn'];
 export const OTP_EXPIRY_MS = 5 * 60 * 1000;
 export const MAGIC_LINK_EXPIRY_MS = 10 * 60 * 1000;
 export const OTP_RESEND_COOLDOWN_MS = 60 * 1000;

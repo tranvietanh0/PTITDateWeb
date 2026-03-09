@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const ALLOWED_DOMAINS = ["@ptit.edu.vn", "@stu.ptit.edu.vn"];
 
 type SessionResponse = {
   success: boolean;
@@ -42,8 +43,12 @@ export default function Home() {
   }
 
   function ensurePtitEmail() {
-    if (!normalizedEmail.endsWith("@ptit.edu.vn")) {
-      throw new Error("Chi ho tro email @ptit.edu.vn");
+    const isAllowed = ALLOWED_DOMAINS.some((domain) =>
+      normalizedEmail.endsWith(domain),
+    );
+
+    if (!isAllowed) {
+      throw new Error("Chi ho tro @ptit.edu.vn hoac @stu.ptit.edu.vn");
     }
   }
 
@@ -170,10 +175,12 @@ export default function Home() {
           className="rounded-3xl border border-[#e7d8c8] bg-[var(--card)] p-6"
         >
           <h2 className="text-xl font-semibold">Yeu cau OTP</h2>
-          <p className="mt-1 text-sm text-[#51617b]">Chi nhan @ptit.edu.vn</p>
+          <p className="mt-1 text-sm text-[#51617b]">
+            Chi nhan @ptit.edu.vn hoac @stu.ptit.edu.vn
+          </p>
           <input
             className="mt-4 w-full rounded-xl border border-[#d8c5b3] bg-white px-3 py-2 outline-none focus:border-[var(--accent)]"
-            placeholder="mssv@ptit.edu.vn"
+            placeholder="mssv@stu.ptit.edu.vn"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />

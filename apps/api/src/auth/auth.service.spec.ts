@@ -52,8 +52,15 @@ describe('AuthService', () => {
 
   it('rejects non-PTIT email when requesting OTP', async () => {
     await expect(service.requestOtp('abc@gmail.com')).rejects.toThrow(
-      'Only @ptit.edu.vn emails are allowed.',
+      'Only @ptit.edu.vn or @stu.ptit.edu.vn emails are allowed.',
     );
+  });
+
+  it('accepts PTIT student domain when requesting OTP', async () => {
+    const result = await service.requestOtp('abc@stu.ptit.edu.vn');
+
+    expect(result.success).toBe(true);
+    expect(result.email).toBe('abc@stu.ptit.edu.vn');
   });
 
   it('creates OTP record for PTIT email', async () => {

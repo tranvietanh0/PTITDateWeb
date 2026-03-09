@@ -227,7 +227,9 @@ export class AuthService {
 
   private assertPtitEmail(email: string) {
     if (!isPtitEmail(email)) {
-      throw new BadRequestException('Only @ptit.edu.vn emails are allowed.');
+      throw new BadRequestException(
+        'Only @ptit.edu.vn or @stu.ptit.edu.vn emails are allowed.',
+      );
     }
   }
 

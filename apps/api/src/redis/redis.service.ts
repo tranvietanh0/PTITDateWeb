@@ -4,6 +4,10 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
+  private readonly memoryStore = new Map<
+    string,
+    { value: string; expiresAt: number }
+  >();
 
   constructor() {
     this.client = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
@@ -13,18 +17,48 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async setWithTtl(key: string, value: string, ttlSeconds: number) {
-    await this.client.set(key, value, 'EX', ttlSeconds);
+    try {
+      await this.client.set(key, value, 'EX', ttlSeconds);
+      return;
+    } catch {
+      this.memoryStore.set(key, {
+        value,
+        expiresAt: Date.now() + ttlSeconds * 1000,
+      });
+    }
   }
 
   async get(key: string): Promise<string | null> {
-    return this.client.get(key);
+    try {
+      return await this.client.get(key);
+    } catch {
+      const record = this.memoryStore.get(key);
+      if (!record) {
+        return null;
+      }
+
+      if (Date.now() > record.expiresAt) {
+        this.memoryStore.delete(key);
+        return null;
+      }
+
+      return record.value;
+    }
   }
 
   async del(key: string) {
-    await this.client.del(key);
+    try {
+      await this.client.del(key);
+    } catch {
+      this.memoryStore.delete(key);
+    }
   }
 
   async onModuleDestroy() {
-    await this.client.quit();
+    try {
+      await this.client.quit();
+    } catch {
+      this.memoryStore.clear();
+    }
   }
 }

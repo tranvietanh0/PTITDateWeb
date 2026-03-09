@@ -297,4 +297,5 @@ Status vocabulary:
 - 2026-03-09: Applied migration `sprint2_profile_foundation` and validated API lint/test/build.
 - 2026-03-09: Added onboarding web flow (`/onboarding`) connected to profile APIs.
 - 2026-03-09: Added completion gate route (`/discovery`) requiring completed onboarding.
+- 2026-03-09: Added Redis-service in-memory fallback to keep OTP/magic-link flow testable when local Redis is down.
 - 2026-03-09: Docker engine returned API error when starting containers; DB migration step remains pending until Docker is healthy.

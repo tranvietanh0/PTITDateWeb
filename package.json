@@ -32,5 +32,9 @@
   "bugs": {
     "url": "https://github.com/tranvietanh0/PTITDateWeb/issues"
   },
-  "homepage": "https://github.com/tranvietanh0/PTITDateWeb#readme"
+  "homepage": "https://github.com/tranvietanh0/PTITDateWeb#readme",
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1"
+  }
 }

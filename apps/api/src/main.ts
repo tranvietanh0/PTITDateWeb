@@ -12,8 +12,13 @@ async function bootstrap() {
     }),
   );
 
+  const corsOrigin =
+    process.env.NODE_ENV === 'production'
+      ? (process.env.WEB_URL ?? 'http://localhost:3000')
+      : true;
+
   app.enableCors({
-    origin: process.env.WEB_URL ?? 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
   });
 
