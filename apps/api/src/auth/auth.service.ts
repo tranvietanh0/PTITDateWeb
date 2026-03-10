@@ -32,6 +32,11 @@ type MagicLinkRecord = {
   expiresAt: number;
 };
 
+type SessionContext = {
+  userAgent?: string;
+  ipAddress?: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -78,7 +83,7 @@ export class AuthService {
     };
   }
 
-  async verifyOtp(rawEmail: string, code: string) {
+  async verifyOtp(rawEmail: string, code: string, context?: SessionContext) {
     const email = normalizeEmail(rawEmail);
     this.assertPtitEmail(email);
 
@@ -119,7 +124,7 @@ export class AuthService {
     }
 
     await this.redis.del(this.otpKey(email));
-    return this.issueSessionForEmail(email, AuthMethod.OTP);
+    return this.issueSessionForEmail(email, AuthMethod.OTP, context);
   }
 
   async requestMagicLink(rawEmail: string, webUrl: string) {
@@ -150,7 +155,7 @@ export class AuthService {
     };
   }
 
-  async verifyMagicLink(token: string) {
+  async verifyMagicLink(token: string, context?: SessionContext) {
     const rawRecord = await this.redis.get(this.magicLinkKey(token));
     const record = rawRecord
       ? (JSON.parse(rawRecord) as MagicLinkRecord)
@@ -166,10 +171,14 @@ export class AuthService {
     }
 
     await this.redis.del(this.magicLinkKey(token));
-    return this.issueSessionForEmail(record.email, AuthMethod.MAGIC_LINK);
+    return this.issueSessionForEmail(
+      record.email,
+      AuthMethod.MAGIC_LINK,
+      context,
+    );
   }
 
-  async refreshSession(refreshToken: string) {
+  async refreshSession(refreshToken: string, context?: SessionContext) {
     const refreshTokenHash = this.hashToken(refreshToken);
 
     const session = await this.prisma.session.findUnique({
@@ -185,6 +194,8 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token invalid or expired.');
     }
 
+    this.assertSessionContext(session.userAgent, session.ipAddress, context);
+
     const nextRefreshToken = this.generateToken(48);
     const nextRefreshTokenHash = this.hashToken(nextRefreshToken);
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
@@ -194,6 +205,8 @@ export class AuthService {
       data: {
         refreshTokenHash: nextRefreshTokenHash,
         expiresAt,
+        userAgent: context?.userAgent ?? session.userAgent,
+        ipAddress: context?.ipAddress ?? session.ipAddress,
       },
     });
 
@@ -235,6 +248,28 @@ export class AuthService {
     return { success: true };
   }
 
+  async getCurrentUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        verifiedAt: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Session user not found.');
+    }
+
+    return {
+      success: true,
+      user,
+    };
+  }
+
   private assertPtitEmail(email: string) {
     if (!isPtitEmail(email)) {
       throw new BadRequestException(
@@ -243,7 +278,11 @@ export class AuthService {
     }
   }
 
-  private async issueSessionForEmail(email: string, method: AuthMethod) {
+  private async issueSessionForEmail(
+    email: string,
+    method: AuthMethod,
+    context?: SessionContext,
+  ) {
     const now = new Date();
 
     const user = await this.prisma.user.upsert({
@@ -278,6 +317,8 @@ export class AuthService {
         userId: user.id,
         refreshTokenHash,
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
+        userAgent: context?.userAgent,
+        ipAddress: context?.ipAddress,
       },
     });
 
@@ -300,6 +341,32 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private assertSessionContext(
+    storedUserAgent: string | null,
+    storedIpAddress: string | null,
+    context?: SessionContext,
+  ) {
+    if (
+      storedUserAgent &&
+      context?.userAgent &&
+      storedUserAgent !== context.userAgent
+    ) {
+      throw new UnauthorizedException(
+        'Session context mismatch. Please login again.',
+      );
+    }
+
+    if (
+      storedIpAddress &&
+      context?.ipAddress &&
+      storedIpAddress !== context.ipAddress
+    ) {
+      throw new UnauthorizedException(
+        'Session context mismatch. Please login again.',
+      );
+    }
   }
 
   private otpKey(email: string): string {

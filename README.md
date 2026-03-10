@@ -59,6 +59,10 @@ Discovery + matching foundation APIs:
 - `POST /swipes`
 - `GET /matches`
 
+Auth session APIs:
+
+- `GET /auth/me` (Bearer access token)
+
 Session note:
 
 - Protected endpoints use `Authorization: Bearer <accessToken>`.

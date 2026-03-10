@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { authorizedFetch, fetchCurrentUser } from "../../lib/auth-client";
 
 type DiscoveryItem = {
   userId: string;
@@ -31,49 +30,6 @@ export default function DiscoveryPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchItem[]>([]);
 
-  const authorizedFetch = useCallback(async (path: string, init?: RequestInit) => {
-    const buildRequest = (accessToken: string | null) =>
-      fetch(`${API_URL}${path}`, {
-        ...init,
-        headers: {
-          ...(init?.body instanceof FormData
-            ? {}
-            : { "Content-Type": "application/json" }),
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          ...(init?.headers ?? {}),
-        },
-      });
-
-    let accessToken = localStorage.getItem("ptitdate_access_token");
-    let response = await buildRequest(accessToken);
-
-    if (response.status === 401) {
-      const refreshToken = localStorage.getItem("ptitdate_refresh_token");
-      if (refreshToken) {
-        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        });
-
-        if (refreshResponse.ok) {
-          const refreshed = (await refreshResponse.json()) as {
-            accessToken: string;
-            refreshToken: string;
-            email: string;
-          };
-          localStorage.setItem("ptitdate_access_token", refreshed.accessToken);
-          localStorage.setItem("ptitdate_refresh_token", refreshed.refreshToken);
-          localStorage.setItem("ptitdate_email", refreshed.email);
-          accessToken = refreshed.accessToken;
-          response = await buildRequest(accessToken);
-        }
-      }
-    }
-
-    return response;
-  }, []);
-
   const fetchDiscovery = useCallback(
     async (useCursor = false) => {
       const query = new URLSearchParams({ limit: "12" });
@@ -95,7 +51,7 @@ export default function DiscoveryPage() {
       setCursor(data.nextCursor ?? null);
       setItems((prev) => (useCursor ? [...prev, ...(data.items ?? [])] : data.items ?? []));
     },
-    [authorizedFetch, cursor],
+    [cursor],
   );
 
   const fetchMatches = useCallback(async () => {
@@ -110,23 +66,27 @@ export default function DiscoveryPage() {
     }
 
     setMatches(data.matches ?? []);
-  }, [authorizedFetch]);
+  }, []);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchDiscovery(false), fetchMatches()]);
   }, [fetchDiscovery, fetchMatches]);
 
   useEffect(() => {
-    const currentEmail = localStorage.getItem("ptitdate_email") ?? "";
-    setEmail(currentEmail);
-
-    if (!currentEmail || !localStorage.getItem("ptitdate_access_token")) {
-      setStatus("Ban chua dang nhap. Vui long quay ve trang chu.");
-      return;
-    }
-
     async function checkCompletion() {
       try {
+        const user = await fetchCurrentUser();
+        if (!user) {
+          setAllowed(false);
+          setStatus("Session het han, dang quay ve trang chu...");
+          window.setTimeout(() => {
+            window.location.href = "/";
+          }, 500);
+          return;
+        }
+
+        setEmail(user.email);
+
         const response = await authorizedFetch(`/profiles`);
         const data = (await response.json()) as {
           completion?: { isComplete: boolean };
@@ -153,7 +113,7 @@ export default function DiscoveryPage() {
     }
 
     void checkCompletion();
-  }, [authorizedFetch, refreshAll]);
+  }, [refreshAll]);
 
   async function handleSwipe(targetUserId: string, action: "LIKE" | "PASS") {
     setLoading(true);

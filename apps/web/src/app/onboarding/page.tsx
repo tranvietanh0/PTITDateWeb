@@ -3,9 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const ALLOWED_DOMAINS = ["@ptit.edu.vn", "@stu.ptit.edu.vn"];
+import { authorizedFetch, fetchCurrentUser } from "../../lib/auth-client";
 
 type ProfileResponse = {
   email: string;
@@ -58,52 +56,34 @@ export default function OnboardingPage() {
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const queryEmail = params.get("email");
-    const localEmail = localStorage.getItem("ptitdate_email");
-    const nextEmail = queryEmail ?? localEmail ?? "";
-    setEmail(nextEmail);
+    async function hydrateUser() {
+      const user = await fetchCurrentUser();
+      if (user) {
+        setEmail(user.email);
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const queryEmail = params.get("email");
+      const localEmail = localStorage.getItem("ptitdate_email");
+      const nextEmail = queryEmail ?? localEmail ?? "";
+
+      if (!nextEmail) {
+        setStatus("Session khong hop le, dang quay ve trang dang nhap...");
+        window.setTimeout(() => {
+          window.location.href = "/";
+        }, 400);
+        return;
+      }
+
+      setEmail(nextEmail);
+    }
+
+    void hydrateUser();
   }, []);
 
   const api = useCallback(async (path: string, init?: RequestInit) => {
-    const buildRequest = (accessToken: string | null) =>
-      fetch(`${API_URL}${path}`, {
-        ...init,
-        headers: {
-          ...(init?.body instanceof FormData
-            ? {}
-            : { "Content-Type": "application/json" }),
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          ...(init?.headers ?? {}),
-        },
-      });
-
-    let accessToken = localStorage.getItem("ptitdate_access_token");
-    let response = await buildRequest(accessToken);
-
-    if (response.status === 401) {
-      const refreshToken = localStorage.getItem("ptitdate_refresh_token");
-      if (refreshToken) {
-        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        });
-
-        if (refreshResponse.ok) {
-          const refreshed = (await refreshResponse.json()) as {
-            accessToken: string;
-            refreshToken: string;
-            email: string;
-          };
-          localStorage.setItem("ptitdate_access_token", refreshed.accessToken);
-          localStorage.setItem("ptitdate_refresh_token", refreshed.refreshToken);
-          localStorage.setItem("ptitdate_email", refreshed.email);
-          accessToken = refreshed.accessToken;
-          response = await buildRequest(accessToken);
-        }
-      }
-    }
+    const response = await authorizedFetch(path, init);
 
     const data = (await response.json()) as Record<string, unknown>;
     if (!response.ok) {
@@ -143,11 +123,7 @@ export default function OnboardingPage() {
   }, [api]);
 
   useEffect(() => {
-    const isAllowed = ALLOWED_DOMAINS.some((domain) =>
-      normalizedEmail.endsWith(domain),
-    );
-
-    if (!isAllowed) {
+    if (!normalizedEmail) {
       return;
     }
 
@@ -155,12 +131,8 @@ export default function OnboardingPage() {
   }, [loadProfile, normalizedEmail]);
 
   function ensureEmail() {
-    const isAllowed = ALLOWED_DOMAINS.some((domain) =>
-      normalizedEmail.endsWith(domain),
-    );
-
-    if (!isAllowed) {
-      throw new Error("Vui long dang nhap voi email PTIT hop le.");
+    if (!normalizedEmail) {
+      throw new Error("Vui long dang nhap de tiep tuc.");
     }
   }
 

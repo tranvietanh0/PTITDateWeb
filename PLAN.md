@@ -232,6 +232,8 @@ Current progress:
 - Applied preference-based filtering in discovery (gender + age range).
 - Added JWT access-token guard (`Authorization: Bearer`) and removed raw email query/body usage on protected endpoints.
 - Updated protected domain services to resolve actor/profile identity by `userId` from JWT payload.
+- Added `GET /auth/me` protected endpoint for session hydration.
+- Added refresh-session context guardrails (user-agent/IP checks) and persisted context on session issue/rotation.
 
 ## Sprint 4 - Chat Realtime
 Status: `pending`
@@ -337,3 +339,4 @@ Status vocabulary:
 - 2026-03-09: Added discovery cursor pagination and preference-aware feed filtering.
 - 2026-03-09: Switched protected routes from `x-user-email` to JWT Bearer access guard.
 - 2026-03-09: Refactored profile/discovery/swipe/upload protected logic to use JWT `sub` (`userId`) as source of identity.
+- 2026-03-09: Added `GET /auth/me` and session-context checks for refresh token rotation.

@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  clearAuthSession,
+  fetchCurrentUser,
+  refreshSession,
+} from "../lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const ALLOWED_DOMAINS = ["@ptit.edu.vn", "@stu.ptit.edu.vn"];
@@ -24,6 +29,33 @@ export default function Home() {
   const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
 
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+
+  useEffect(() => {
+    async function bootstrapSession() {
+      const hadToken = Boolean(localStorage.getItem("ptitdate_access_token"));
+      const user = await fetchCurrentUser();
+      if (!user) {
+        if (hadToken) {
+          setMessage("Session het han, vui long dang nhap lai.");
+        }
+        return;
+      }
+
+      const accessToken = localStorage.getItem("ptitdate_access_token") ?? "";
+      const refreshToken = localStorage.getItem("ptitdate_refresh_token") ?? "";
+      setSession({
+        success: true,
+        email: user.email,
+        accessToken,
+        refreshToken,
+        expiresInSeconds: 0,
+      });
+      setEmail(user.email);
+      setMessage(`Dang nhap san: ${user.email}`);
+    }
+
+    void bootstrapSession();
+  }, []);
 
   async function post(path: string, body: Record<string, string>) {
     const res = await fetch(`${API_URL}${path}`, {
@@ -122,9 +154,11 @@ export default function Home() {
     setMessage("Dang refresh session...");
 
     try {
-      const data = (await post("/auth/refresh", {
-        refreshToken: session.refreshToken,
-      })) as SessionResponse;
+      const data = await refreshSession();
+      if (!data) {
+        throw new Error("Refresh that bai, vui long dang nhap lai.");
+      }
+
       setSession(data);
       localStorage.setItem("ptitdate_email", data.email);
       localStorage.setItem("ptitdate_access_token", data.accessToken);
@@ -149,9 +183,7 @@ export default function Home() {
     try {
       await post("/auth/logout", { refreshToken: session.refreshToken });
       setSession(null);
-      localStorage.removeItem("ptitdate_email");
-      localStorage.removeItem("ptitdate_access_token");
-      localStorage.removeItem("ptitdate_refresh_token");
+      clearAuthSession();
       setMessage("Logout thanh cong.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Logout that bai");

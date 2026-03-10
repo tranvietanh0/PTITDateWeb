@@ -9,7 +9,7 @@ type RedisMock = {
 };
 
 type PrismaMock = {
-  user: { upsert: jest.Mock };
+  user: { upsert: jest.Mock; findUnique: jest.Mock };
   authIdentity: { upsert: jest.Mock };
   session: { findUnique: jest.Mock; update: jest.Mock; create: jest.Mock };
 };
@@ -33,6 +33,7 @@ describe('AuthService', () => {
           id: 'user_1',
           email: 'test@ptit.edu.vn',
         }),
+        findUnique: jest.fn().mockResolvedValue(null),
       },
       authIdentity: {
         upsert: jest.fn().mockResolvedValue({
@@ -113,5 +114,43 @@ describe('AuthService', () => {
     await expect(service.logout('unknown-token')).resolves.toEqual({
       success: true,
     });
+  });
+
+  it('returns current user payload from userId', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce({
+      id: 'user_1',
+      email: 'test@ptit.edu.vn',
+      verifiedAt: new Date('2026-03-01T00:00:00.000Z'),
+      status: 'ACTIVE',
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
+    });
+
+    const result = await service.getCurrentUser('user_1');
+
+    expect(result.success).toBe(true);
+    expect(result.user.email).toBe('test@ptit.edu.vn');
+  });
+
+  it('rejects refresh on session context mismatch', async () => {
+    prisma.session.findUnique.mockResolvedValueOnce({
+      id: 'session_1',
+      userId: 'user_1',
+      refreshTokenHash: 'hash',
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+      userAgent: 'UA_1',
+      ipAddress: '127.0.0.1',
+      user: {
+        id: 'user_1',
+        email: 'test@ptit.edu.vn',
+      },
+    });
+
+    await expect(
+      service.refreshSession('refresh_token_any', {
+        userAgent: 'UA_other',
+        ipAddress: '127.0.0.1',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });

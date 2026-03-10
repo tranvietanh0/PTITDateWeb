@@ -1,4 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
+import { CurrentUserId } from '../common/decorators/current-user-id.decorator';
+import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import { AuthService } from './auth.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -17,8 +20,12 @@ export class AuthController {
   }
 
   @Post('verify-otp')
-  async verifyOtp(@Body() body: VerifyOtpDto) {
-    return this.authService.verifyOtp(body.email, body.code);
+  async verifyOtp(@Body() body: VerifyOtpDto, @Req() request: Request) {
+    return this.authService.verifyOtp(
+      body.email,
+      body.code,
+      this.getSessionContext(request),
+    );
   }
 
   @Post('request-magic-link')
@@ -30,17 +37,39 @@ export class AuthController {
   }
 
   @Post('verify-magic-link')
-  async verifyMagicLink(@Body() body: VerifyMagicLinkDto) {
-    return this.authService.verifyMagicLink(body.token);
+  async verifyMagicLink(
+    @Body() body: VerifyMagicLinkDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.verifyMagicLink(
+      body.token,
+      this.getSessionContext(request),
+    );
   }
 
   @Post('refresh')
-  async refresh(@Body() body: RefreshSessionDto) {
-    return this.authService.refreshSession(body.refreshToken);
+  async refresh(@Body() body: RefreshSessionDto, @Req() request: Request) {
+    return this.authService.refreshSession(
+      body.refreshToken,
+      this.getSessionContext(request),
+    );
   }
 
   @Post('logout')
   async logout(@Body() body: LogoutDto) {
     return this.authService.logout(body.refreshToken);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAccessGuard)
+  async me(@CurrentUserId() userId: string) {
+    return this.authService.getCurrentUser(userId);
+  }
+
+  private getSessionContext(request: Request) {
+    return {
+      userAgent: request.get('user-agent') ?? undefined,
+      ipAddress: request.ip ?? undefined,
+    };
   }
 }
