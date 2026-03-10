@@ -70,6 +70,7 @@ export class AuthController {
     return {
       userAgent: request.get('user-agent') ?? undefined,
       ipAddress: request.ip ?? undefined,
+      deviceId: request.get('x-device-id') ?? undefined,
     };
   }
 }

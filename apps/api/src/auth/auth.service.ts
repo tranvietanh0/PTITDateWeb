@@ -35,6 +35,7 @@ type MagicLinkRecord = {
 type SessionContext = {
   userAgent?: string;
   ipAddress?: string;
+  deviceId?: string;
 };
 
 @Injectable()
@@ -194,7 +195,15 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token invalid or expired.');
     }
 
-    this.assertSessionContext(session.userAgent, session.ipAddress, context);
+    this.assertSessionContext(
+      {
+        id: session.id,
+        userAgent: session.userAgent,
+        ipAddress: session.ipAddress,
+        fingerprintHash: session.fingerprintHash,
+      },
+      context,
+    );
 
     const nextRefreshToken = this.generateToken(48);
     const nextRefreshTokenHash = this.hashToken(nextRefreshToken);
@@ -207,6 +216,9 @@ export class AuthService {
         expiresAt,
         userAgent: context?.userAgent ?? session.userAgent,
         ipAddress: context?.ipAddress ?? session.ipAddress,
+        fingerprintHash:
+          this.computeSessionFingerprintHash(context) ??
+          session.fingerprintHash,
       },
     });
 
@@ -319,6 +331,7 @@ export class AuthService {
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
         userAgent: context?.userAgent,
         ipAddress: context?.ipAddress,
+        fingerprintHash: this.computeSessionFingerprintHash(context),
       },
     });
 
@@ -343,30 +356,98 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
+  private computeSessionFingerprintHash(
+    context?: SessionContext,
+  ): string | null {
+    if (!context) {
+      return null;
+    }
+
+    const source = [
+      context.deviceId?.trim().toLowerCase() ?? '',
+      context.userAgent?.trim().toLowerCase() ?? '',
+      this.normalizeIpAddress(context.ipAddress),
+    ].join('|');
+
+    if (!source.replace(/\|/g, '')) {
+      return null;
+    }
+
+    return this.hashToken(source);
+  }
+
+  private normalizeIpAddress(ipAddress?: string): string {
+    if (!ipAddress) {
+      return '';
+    }
+
+    const normalized = ipAddress.replace('::ffff:', '').trim();
+    if (normalized.includes(':')) {
+      return normalized.split(':').slice(0, 4).join(':');
+    }
+
+    const parts = normalized.split('.');
+    if (parts.length === 4) {
+      return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+    }
+
+    return normalized;
+  }
+
   private assertSessionContext(
-    storedUserAgent: string | null,
-    storedIpAddress: string | null,
+    session: {
+      id: string;
+      userAgent: string | null;
+      ipAddress: string | null;
+      fingerprintHash: string | null;
+    },
     context?: SessionContext,
   ) {
+    const expectedFingerprint = this.computeSessionFingerprintHash(context);
+
+    if (session.fingerprintHash) {
+      if (
+        !expectedFingerprint ||
+        expectedFingerprint !== session.fingerprintHash
+      ) {
+        this.revokeSessionAsync(session.id);
+
+        throw new UnauthorizedException(
+          'Session context mismatch. Please login again.',
+        );
+      }
+
+      return;
+    }
+
     if (
-      storedUserAgent &&
+      session.userAgent &&
       context?.userAgent &&
-      storedUserAgent !== context.userAgent
+      session.userAgent !== context.userAgent
     ) {
+      this.revokeSessionAsync(session.id);
       throw new UnauthorizedException(
         'Session context mismatch. Please login again.',
       );
     }
 
     if (
-      storedIpAddress &&
+      session.ipAddress &&
       context?.ipAddress &&
-      storedIpAddress !== context.ipAddress
+      session.ipAddress !== context.ipAddress
     ) {
+      this.revokeSessionAsync(session.id);
       throw new UnauthorizedException(
         'Session context mismatch. Please login again.',
       );
     }
+  }
+
+  private revokeSessionAsync(sessionId: string) {
+    void this.prisma.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
   }
 
   private otpKey(email: string): string {

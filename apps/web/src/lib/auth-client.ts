@@ -25,13 +25,31 @@ export function clearAuthSession() {
   localStorage.removeItem('ptitdate_refresh_token');
 }
 
+export function getOrCreateDeviceId() {
+  const existing = localStorage.getItem('ptitdate_device_id');
+  if (existing) {
+    return existing;
+  }
+
+  const generated =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  localStorage.setItem('ptitdate_device_id', generated);
+  return generated;
+}
+
 export async function authorizedFetch(path: string, init?: RequestInit) {
+  const deviceId = getOrCreateDeviceId();
+
   const buildRequest = (accessToken: string | null) =>
     fetch(`${API_URL}${path}`, {
       ...init,
       headers: {
         ...(init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        'x-device-id': deviceId,
         ...(init?.headers ?? {}),
       },
     });
@@ -58,7 +76,10 @@ export async function refreshSession() {
 
   const response = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-device-id': getOrCreateDeviceId(),
+    },
     body: JSON.stringify({ refreshToken }),
   });
 

@@ -5,7 +5,7 @@
 - Product type: Tinder-style web dating app
 - Initial market: PTIT only
 - Target users: PTIT students (all years)
-- Access control: only `@ptit.edu.vn`
+- Access control: only `@ptit.edu.vn` and `@stu.ptit.edu.vn`
 - Monetization phase 1: free only
 - Client: Web responsive first
 - Auth methods: OTP + Magic Link (email)
@@ -76,7 +76,7 @@ Success criteria:
 ## 4) Data Model (v1)
 
 - `users`
-  - id, email (`@ptit.edu.vn`), verified_at, status, created_at
+  - id, email (`@ptit.edu.vn` or `@stu.ptit.edu.vn`), verified_at, status, created_at
 - `auth_identities`
   - user_id, method (`otp`, `magic_link`), last_login_at
 - `profiles`
@@ -104,7 +104,7 @@ Success criteria:
 
 ## 5) Security & Abuse Controls (Required)
 
-- Strict server-side domain validation (`@ptit.edu.vn`)
+- Strict server-side domain validation (`@ptit.edu.vn`, `@stu.ptit.edu.vn`)
 - OTP:
   - 6 digits
   - expiry: 5 minutes
@@ -340,3 +340,6 @@ Status vocabulary:
 - 2026-03-09: Switched protected routes from `x-user-email` to JWT Bearer access guard.
 - 2026-03-09: Refactored profile/discovery/swipe/upload protected logic to use JWT `sub` (`userId`) as source of identity.
 - 2026-03-09: Added `GET /auth/me` and session-context checks for refresh token rotation.
+- 2026-03-10: Added device-id propagation from web auth flows and persisted session fingerprint hash for stronger refresh-session binding.
+- 2026-03-10: Hardened refresh mismatch handling to revoke mismatched sessions and added auth tests for fingerprint mismatch/match scenarios.
+- 2026-03-10: Re-validated quality gates (`test:api`, API lint/build, web build) after session guardrail updates.

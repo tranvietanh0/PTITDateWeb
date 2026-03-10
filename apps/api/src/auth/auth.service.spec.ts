@@ -1,5 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthMethod } from '@prisma/client';
+import { createHash } from 'node:crypto';
 import { AuthService } from './auth.service';
 
 type RedisMock = {
@@ -152,5 +153,71 @@ describe('AuthService', () => {
         ipAddress: '127.0.0.1',
       }),
     ).rejects.toThrow(UnauthorizedException);
+
+    expect(prisma.session.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects refresh when device fingerprint does not match', async () => {
+    const expectedFingerprint = createHash('sha256')
+      .update('device-a|ua_1|127.0.0.0')
+      .digest('hex');
+
+    prisma.session.findUnique.mockResolvedValueOnce({
+      id: 'session_1',
+      userId: 'user_1',
+      refreshTokenHash: 'hash',
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+      userAgent: 'UA_1',
+      ipAddress: '127.0.0.1',
+      fingerprintHash: expectedFingerprint,
+      user: {
+        id: 'user_1',
+        email: 'test@ptit.edu.vn',
+      },
+    });
+
+    await expect(
+      service.refreshSession('refresh_token_any', {
+        userAgent: 'UA_1',
+        ipAddress: '127.0.0.1',
+        deviceId: 'device-b',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(prisma.session.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes session when device fingerprint matches', async () => {
+    const expectedFingerprint = createHash('sha256')
+      .update('device-a|ua_1|127.0.0.0')
+      .digest('hex');
+
+    prisma.session.findUnique.mockResolvedValueOnce({
+      id: 'session_1',
+      userId: 'user_1',
+      refreshTokenHash: 'hash',
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+      userAgent: 'UA_1',
+      ipAddress: '127.0.0.1',
+      fingerprintHash: expectedFingerprint,
+      user: {
+        id: 'user_1',
+        email: 'test@ptit.edu.vn',
+      },
+    });
+
+    const result = await service.refreshSession('refresh_token_any', {
+      userAgent: 'UA_1',
+      ipAddress: '127.0.0.1',
+      deviceId: 'device-a',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.email).toBe('test@ptit.edu.vn');
+    expect(prisma.session.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'session_1' } }),
+    );
   });
 });

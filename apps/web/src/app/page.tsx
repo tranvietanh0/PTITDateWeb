@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   clearAuthSession,
   fetchCurrentUser,
+  getOrCreateDeviceId,
   refreshSession,
 } from "../lib/auth-client";
 
@@ -60,7 +61,10 @@ export default function Home() {
   async function post(path: string, body: Record<string, string>) {
     const res = await fetch(`${API_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-device-id": getOrCreateDeviceId(),
+      },
       body: JSON.stringify(body),
     });
 

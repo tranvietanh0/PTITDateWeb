@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getOrCreateDeviceId } from "../../../lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -19,7 +20,10 @@ export default function AuthCallbackPage() {
       try {
         const response = await fetch(`${API_URL}/auth/verify-magic-link`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-device-id": getOrCreateDeviceId(),
+          },
           body: JSON.stringify({ token }),
         });
 
